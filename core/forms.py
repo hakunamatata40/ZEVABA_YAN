@@ -1,13 +1,18 @@
 from django import forms
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+User = get_user_model()
 from .models import Club, Publication, Report, Message, ClubMessage
+from django.contrib.auth.forms import UserCreationForm
 
-class UserRegisterForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput)
+class UserRegisterForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+    bio = forms.CharField(max_length=500, required=False, widget=forms.Textarea)
+    profile_picture = forms.ImageField(required=False)
+    is_mentor = forms.BooleanField(required=False)
+
     class Meta:
         model = User
-        fields = ['username', 'email', 'password']
-
+        fields = ['username', 'email', 'password1', 'password2', 'bio', 'profile_picture', 'is_mentor']
 class PublicationForm(forms.ModelForm):
     class Meta:
         model = Publication

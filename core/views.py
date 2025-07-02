@@ -5,9 +5,13 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from .models import User, Club, Publication, Reaction, Challenge, Project, Notification, Report, Message, ClubMessage
-from .forms import UserRegisterForm, PublicationForm, ReportForm, MessageForm, ClubMessageForm
+from core.models import User, Club, Publication, Reaction, Challenge, Project, Notification, Report, Message, ClubMessage
+from core.forms import UserRegisterForm, PublicationForm, ReportForm, MessageForm, ClubMessageForm
 from django.db.models import Q, Max, Count
+import logging
+
+# Configure logging
+logger = logging.getLogger(__name__)
 
 def home(request):
     clubs = Club.objects.all()[:5]
@@ -15,12 +19,17 @@ def home(request):
     return render(request, 'home.html', {'clubs': clubs, 'challenges': challenges})
 
 def register(request):
+    logger.info("Register view called")
     if request.method == 'POST':
-        form = UserRegisterForm(request.POST)
+        form = UserRegisterForm(request.POST, request.FILES)
         if form.is_valid():
+            logger.info(f"Creating user with username: {form.cleaned_data['username']}")
             user = form.save()
             login(request, user)
+            logger.info(f"User {user.username} created and logged in")
             return redirect('feed')
+        else:
+            logger.warning(f"Form errors: {form.errors}")
     else:
         form = UserRegisterForm()
     return render(request, 'register.html', {'form': form})
@@ -32,17 +41,20 @@ def user_login(request):
         user = authenticate(request, username=username, password=password)
         if user:
             login(request, user)
+            logger.info(f"User {username} logged in")
             return redirect('feed')
         messages.error(request, 'Invalid credentials')
+        logger.warning(f"Failed login attempt for username: {username}")
     return render(request, 'login.html')
 
 def user_logout(request):
+    logger.info(f"User {request.user.username} logged out")
     logout(request)
     return render(request, 'logout.html')
 
 @login_required
 def feed(request):
-    clubs = request.user.clubs.all()
+    clubs = request.user.joined_clubs.all()
     publications = Publication.objects.filter(club__in=clubs).order_by('-created_at')
     reaction_choices = [
         ('ADHERE', "J'adhère"),
@@ -54,7 +66,7 @@ def feed(request):
 
 @login_required
 def personalized_feed(request):
-    clubs = request.user.clubs.all()
+    clubs = request.user.joined_clubs.all()
     publications = Publication.objects.filter(club__in=clubs).order_by('-created_at')
     return render(request, 'personalized_feed.html', {'publications': publications})
 
@@ -69,6 +81,7 @@ def publication_create(request):
             if club_id:
                 publication.club = get_object_or_404(Club, pk=club_id)
             publication.save()
+            logger.info(f"Publication created by {request.user.username}")
             return redirect('feed')
     else:
         form = PublicationForm(user=request.user)
@@ -97,6 +110,7 @@ def react(request, pk):
         created_at=timezone.now()
     )
     reaction.save()
+    logger.info(f"Reaction {reaction_type} added by {request.user.username} on publication {pk}")
     
     return JsonResponse({
         'success': True,
@@ -139,6 +153,7 @@ def like_dislike(request, pk):
                 publication.likes -= 1
 
     publication.save()
+    logger.info(f"{action} by {user.username} on publication {pk}")
     return JsonResponse({
         'success': True,
         'likes': publication.likes,
@@ -168,43 +183,47 @@ def club_detail(request, pk):
 @login_required
 def club_subscribe(request, pk):
     club = get_object_or_404(Club, pk=pk)
-    if request.user not in club.members.all():
-        club.members.add(request.user)
+    if request.user not in club.joined_clubs.all():
+        club.joined_clubs.add(request.user)
         Notification.objects.create(
             user=club.creator,
             message=f"{request.user.username} s'est abonné à votre club {club.name}"
         )
+        logger.info(f"{request.user.username} subscribed to club {club.name}")
     return redirect('club_detail', pk=pk)
 
 @require_POST
 @login_required
 def club_unsubscribe(request, pk):
     club = get_object_or_404(Club, pk=pk)
-    if request.user in club.members.all():
-        club.members.remove(request.user)
+    if request.user in club.joined_clubs.all():
+        club.joined_clubs.remove(request.user)
+        logger.info(f"{request.user.username} unsubscribed from club {club.name}")
     return redirect('club_detail', pk=pk)
 
 @require_POST
 @login_required
 def club_manage_admins(request, pk):
     club = get_object_or_404(Club, pk=pk)
-    if request.user != club.creator and request.user not in club.admins.all():
+    if request.user != club.creator and request.user not in club.admin_clubs.all():
         return HttpResponseBadRequest("Accès non autorisé")
     user_id = request.POST.get('user_id')
     action = request.POST.get('action')
     user = get_object_or_404(User, pk=user_id)
     if action == 'add_admin':
-        club.admins.add(user)
+        club.admin_clubs.add(user)
         Notification.objects.create(
             user=user,
             message=f"Vous avez été nommé admin du club {club.name}"
         )
+        logger.info(f"{user.username} added as admin to club {club.name}")
     elif action == 'remove_admin':
-        club.admins.remove(user)
+        club.admin_clubs.remove(user)
         Notification.objects.create(
             user=user,
             message=f"Vous n'êtes plus admin du club {club.name}"
         )
+        logger.info(f"{user.username} removed as admin from club {club.name}")
     return redirect('club_manage_admins', pk=pk)
 
 @require_POST
@@ -221,6 +240,7 @@ def report_user(request, pk):
         reported_user=reported_user,
         reason=reason
     )
+    logger.info(f"User {request.user.username} reported {reported_user.username}")
     return JsonResponse({'success': True})
 
 @login_required
@@ -233,12 +253,14 @@ def search(request):
 @login_required
 def search_suggestions(request):
     query = request.GET.get('query', '')
+    logger.info(f"Search suggestions query: {query}")
     users = User.objects.filter(username__icontains=query)[:5]
     clubs = Club.objects.filter(name__icontains=query)[:5]
     data = {
         'users': [{'id': user.id, 'username': user.username} for user in users],
-        'clubs': [{'id': club.id, 'name': club.name, 'is_member': request.user in club.members.all()} for club in clubs]
+        'clubs': [{'id': club.id, 'name': club.name, 'is_member': request.user in club.joined_clubs.all()} for club in clubs]
     }
+    logger.info(f"Search suggestions response: {data}")
     return JsonResponse(data)
 
 @login_required
@@ -257,6 +279,7 @@ def send_message(request, pk):
                 user=recipient,
                 message=f"Nouveau message de {request.user.username}"
             )
+            logger.info(f"Message sent from {request.user.username} to {recipient.username}: {message.content}")
             return JsonResponse({
                 'success': True,
                 'sender': request.user.username,
@@ -271,7 +294,8 @@ def send_message(request, pk):
 def messages(request):
     conv_type = request.GET.get('type')
     conv_id = request.GET.get('id')
-    
+    logger.info(f"Messages view called with type: {conv_type}, id: {conv_id}")
+
     # Get recent conversations (user and club)
     user_convs = Message.objects.filter(
         Q(sender=request.user) | Q(recipient=request.user)
@@ -281,39 +305,45 @@ def messages(request):
     ).order_by('-last_message_time')[:10]
     
     club_convs = ClubMessage.objects.filter(
-        club__members=request.user
+        club__club_members=request.user
     ).values('club').annotate(
         last_message_time=Max('created_at'),
-        unread_count=Count('id', filter=Q(club__members=request.user))
+        unread_count=Count('id', filter=Q(club__club_members=request.user))
     ).order_by('-last_message_time')[:10]
     
     conversations = []
     for conv in user_convs:
         other_user_id = conv['recipient'] if conv['sender'] == request.user.id else conv['sender']
-        other_user = User.objects.get(id=other_user_id)
-        last_message = Message.objects.filter(
-            Q(sender=request.user, recipient=other_user) | Q(sender=other_user, recipient=request.user)
-        ).order_by('-created_at').first()
-        conversations.append({
-            'type': 'user',
-            'id': other_user.id,
-            'name': other_user.username,
-            'last_message': last_message.content if last_message else '',
-            'last_message_time': conv['last_message_time'],
-            'unread_count': conv['unread_count']
-        })
+        try:
+            other_user = User.objects.get(id=other_user_id)
+            last_message = Message.objects.filter(
+                Q(sender=request.user, recipient=other_user) | Q(sender=other_user, recipient=request.user)
+            ).order_by('-created_at').first()
+            conversations.append({
+                'type': 'user',
+                'id': other_user.id,
+                'name': other_user.username,
+                'last_message': last_message.content if last_message else '',
+                'last_message_time': conv['last_message_time'],
+                'unread_count': conv['unread_count']
+            })
+        except User.DoesNotExist:
+            logger.warning(f"User ID {other_user_id} not found")
     
     for conv in club_convs:
-        club = Club.objects.get(id=conv['club'])
-        last_message = ClubMessage.objects.filter(club=club).order_by('-created_at').first()
-        conversations.append({
-            'type': 'club',
-            'id': club.id,
-            'name': club.name,
-            'last_message': last_message.content if last_message else '',
-            'last_message_time': conv['last_message_time'],
-            'unread_count': conv['unread_count']
-        })
+        try:
+            club = Club.objects.get(id=conv['club'])
+            last_message = ClubMessage.objects.filter(club=club).order_by('-created_at').first()
+            conversations.append({
+                'type': 'club',
+                'id': club.id,
+                'name': club.name,
+                'last_message': last_message.content if last_message else '',
+                'last_message_time': conv['last_message_time'],
+                'unread_count': conv['unread_count']
+            })
+        except Club.DoesNotExist:
+            logger.warning(f"Club ID {conv['club']} not found")
     
     conversations.sort(key=lambda x: x['last_message_time'] or timezone.now(), reverse=True)
     
@@ -321,35 +351,46 @@ def messages(request):
     messages = []
     selected_conversation = None
     if conv_type and conv_id:
+        logger.info(f"Loading conversation: type={conv_type}, id={conv_id}")
         if conv_type == 'user':
-            other_user = get_object_or_404(User, pk=conv_id)
-            selected_conversation = {
-                'type': 'user',
-                'id': other_user.id,
-                'name': other_user.username
-            }
-            messages = Message.objects.filter(
-                Q(sender=request.user, recipient=other_user) | Q(sender=other_user, recipient=request.user)
-            ).order_by('created_at')
-            # Mark messages as read
-            messages.filter(recipient=request.user, is_read=False).update(is_read=True)
+            try:
+                other_user = get_object_or_404(User, pk=conv_id)
+                selected_conversation = {
+                    'type': 'user',
+                    'id': other_user.id,
+                    'name': other_user.username
+                }
+                messages = Message.objects.filter(
+                    Q(sender=request.user, recipient=other_user) | Q(sender=other_user, recipient=request.user)
+                ).order_by('created_at')
+                # Mark messages as read
+                updated_count = messages.filter(recipient=request.user, is_read=False).update(is_read=True)
+                logger.info(f"Marked {updated_count} messages as read for user {request.user.username}")
+            except User.DoesNotExist:
+                logger.error(f"User ID {conv_id} not found")
+                return HttpResponseBadRequest("Utilisateur non trouvé")
         elif conv_type == 'club':
-            club = get_object_or_404(Club, pk=conv_id)
-            if request.user not in club.members.all():
-                return HttpResponseBadRequest("Vous devez être membre du club")
-            selected_conversation = {
-                'type': 'club',
-                'id': club.id,
-                'name': club.name
-            }
-            messages = ClubMessage.objects.filter(club=club).order_by('created_at')
+            try:
+                club = get_object_or_404(Club, pk=conv_id)
+                if request.user not in club.joined_clubs.all():
+                    logger.error(f"User {request.user.username} is not a member of club {club.name}")
+                    return HttpResponseBadRequest("Vous devez être membre du club")
+                selected_conversation = {
+                    'type': 'club',
+                    'id': club.id,
+                    'name': club.name
+                }
+                messages = ClubMessage.objects.filter(club=club).order_by('created_at')
+            except Club.DoesNotExist:
+                logger.error(f"Club ID {conv_id} not found")
+                return HttpResponseBadRequest("Club non trouvé")
     
     # Mark selected conversation
     for conv in conversations:
         conv['selected'] = conv['type'] == conv_type and str(conv['id']) == conv_id
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return JsonResponse({
+        response_data = {
             'conversations': [{
                 'type': conv['type'],
                 'id': conv['id'],
@@ -364,8 +405,11 @@ def messages(request):
                 'content': msg.content,
                 'created_at': msg.created_at.strftime('%d/%m/%Y %H:%M'),
                 'is_sender': msg.sender == request.user
-            } for msg in messages]
-        })
+            } for msg in messages],
+            'selected_conversation': selected_conversation
+        }
+        logger.info(f"AJAX response: {response_data}")
+        return JsonResponse(response_data)
     
     return render(request, 'messages.html', {
         'recent_conversations': conversations,
@@ -376,6 +420,7 @@ def messages(request):
 @login_required
 def search_messages(request):
     query = request.GET.get('query', '')
+    logger.info(f"Search messages query: {query}")
     user_convs = Message.objects.filter(
         Q(sender=request.user) | Q(recipient=request.user),
         Q(content__icontains=query)
@@ -385,51 +430,57 @@ def search_messages(request):
     ).order_by('-last_message_time')[:10]
     
     club_convs = ClubMessage.objects.filter(
-        club__members=request.user,
+        club__club_members=request.user,
         content__icontains=query
     ).values('club').annotate(
         last_message_time=Max('created_at'),
-        unread_count=Count('id', filter=Q(club__members=request.user))
+        unread_count=Count('id', filter=Q(club__club_members=request.user))
     ).order_by('-last_message_time')[:10]
     
     conversations = []
     for conv in user_convs:
         other_user_id = conv['recipient'] if conv['sender'] == request.user.id else conv['sender']
-        other_user = User.objects.get(id=other_user_id)
-        last_message = Message.objects.filter(
-            Q(sender=request.user, recipient=other_user) | Q(sender=other_user, recipient=request.user)
-        ).order_by('-created_at').first()
-        conversations.append({
-            'type': 'user',
-            'id': other_user.id,
-            'name': other_user.username,
-            'last_message': last_message.content if last_message else '',
-            'last_message_time': conv['last_message_time'].strftime('%d/%m/%Y %H:%M') if conv['last_message_time'] else '',
-            'unread_count': conv['unread_count']
-        })
+        try:
+            other_user = User.objects.get(id=other_user_id)
+            last_message = Message.objects.filter(
+                Q(sender=request.user, recipient=other_user) | Q(sender=other_user, recipient=request.user)
+            ).order_by('-created_at').first()
+            conversations.append({
+                'type': 'user',
+                'id': other_user.id,
+                'name': other_user.username,
+                'last_message': last_message.content if last_message else '',
+                'last_message_time': conv['last_message_time'].strftime('%d/%m/%Y %H:%M') if conv['last_message_time'] else '',
+                'unread_count': conv['unread_count']
+            })
+        except User.DoesNotExist:
+            logger.warning(f"User ID {other_user_id} not found")
     
     for conv in club_convs:
-        club = Club.objects.get(id=conv['club'])
-        last_message = ClubMessage.objects.filter(club=club).order_by('-created_at').first()
-        conversations.append({
-            'type': 'club',
-            'id': club.id,
-            'name': club.name,
-            'last_message': last_message.content if last_message else '',
-            'last_message_time': conv['last_message_time'].strftime('%d/%m/%Y %H:%M') if conv['last_message_time'] else '',
-            'unread_count': conv['unread_count']
-        })
+        try:
+            club = Club.objects.get(id=conv['club'])
+            last_message = ClubMessage.objects.filter(club=club).order_by('-created_at').first()
+            conversations.append({
+                'type': 'club',
+                'id': club.id,
+                'name': club.name,
+                'last_message': last_message.content if last_message else '',
+                'last_message_time': conv['last_message_time'].strftime('%d/%m/%Y %H:%M') if conv['last_message_time'] else '',
+                'unread_count': conv['unread_count']
+            })
+        except Club.DoesNotExist:
+            logger.warning(f"Club ID {conv['club']} not found")
     
-    conversations.sort(key=lambda x: x['last_message_time'], reverse=True)
+    conversations.sort(key=lambda x: x['last_message_time'] or '', reverse=True)
     
-    return JsonResponse({
-        'conversations': conversations
-    })
+    response_data = {'conversations': conversations}
+    logger.info(f"Search messages response: {response_data}")
+    return JsonResponse(response_data)
 
 @login_required
 def club_messages(request, pk):
     club = get_object_or_404(Club, pk=pk)
-    if request.user not in club.members.all():
+    if request.user not in club.joined_clubs.all():
         return HttpResponseBadRequest("Vous devez être membre du club pour accéder à la messagerie")
     if request.method == 'POST':
         form = ClubMessageForm(request.POST)
@@ -438,11 +489,12 @@ def club_messages(request, pk):
             message.sender = request.user
             message.club = club
             message.save()
-            for member in club.members.exclude(id=request.user.id):
+            for member in club.joined_clubs.exclude(id=request.user.id):
                 Notification.objects.create(
                     user=member,
                     message=f"Nouveau message dans le club {club.name} de {request.user.username}"
                 )
+            logger.info(f"Club message sent by {request.user.username} in club {club.name}: {message.content}")
             return JsonResponse({
                 'success': True,
                 'sender': request.user.username,
@@ -468,7 +520,7 @@ def profile(request, username):
 @login_required
 def subscriptions(request):
     user = request.user
-    clubs = user.clubs.all()
+    clubs = user.joined_clubs.all()
     return render(request, 'subscriptions.html', {'clubs': clubs})
 
 @login_required
