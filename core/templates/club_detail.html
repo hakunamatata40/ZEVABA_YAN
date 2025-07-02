@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% block title %}{{ club.name }}{% endblock %}
+{% block content %}
+    <div class="container mx-auto p-4">
+        <!-- Club Header -->
+        <h1 class="text-2xl font-bold mb-4 text-zevaba-dark-blue">{{ club.name }}</h1>
+        <p class="text-gray-800 mb-6">{{ club.description }}</p>
+        
+        <!-- Search Bar -->
+        <div class="mb-6">
+            <form method="GET" action="{% url 'search' %}" class="flex items-center space-x-2">
+                <input type="text" name="query" placeholder="Rechercher utilisateurs ou clubs..." class="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue">
+                <button type="submit" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded-lg hover:bg-zevaba-dark-blue/80 transition-colors">Rechercher</button>
+            </form>
+        </div>
+
+        <!-- Club Actions -->
+        <div class="flex items-center space-x-4 mb-6">
+            <a href="{% url 'publication_create' %}?club={{ club.pk }}" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded hover:bg-zevaba-dark-blue/80 transition-colors">Créer une publication</a>
+            {% if user.is_authenticated %}
+                {% if user in club.members.all %}
+                    <form method="POST" action="{% url 'club_unsubscribe' club.pk %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors">Se désabonner</button>
+                    </form>
+                {% else %}
+                    <form method="POST" action="{% url 'club_subscribe' club.pk %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="bg-zevaba-light-blue text-white px-4 py-2 rounded hover:bg-zevaba-light-blue/80 transition-colors">S'abonner</button>
+                    </form>
+                {% endif %}
+                <a href="{% url 'club_messages' club.pk %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue transition-colors">Messagerie du club</a>
+                {% if user == club.creator or user in club.admins.all %}
+                    <a href="{% url 'club_manage_admins' club.pk %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue transition-colors">Gérer les admins</a>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <!-- Publications -->
+        <div class="space-y-6">
+            {% for publication in publications %}
+                <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+                    <h3 class="text-xl font-bold text-zevaba-dark-blue mb-2">
+                        <a href="{% url 'profile' publication.user.username %}" class="hover:underline">{{ publication.type }} - {{ publication.domain }}</a>
+                    </h3>
+                    <p class="text-gray-800 mb-4">{{ publication.content }}</p>
+                    {% if publication.media %}
+                        <div class="mb-4">
+                            {% if publication.media.name|lower|slice:"-4:" == '.pdf' %}
+                                <a href="{{ publication.media.url }}" class="text-zevaba-light-blue hover:underline" target="_blank">Voir le PDF</a>
+                            {% elif publication.media.name|lower|slice:"-4:" in '.jpg,.jpeg,.png,.gif' %}
+                                <img src="{{ publication.media.url }}" alt="Publication media" class="max-w-full h-auto rounded-lg">
+                            {% elif publication.media.name|lower|slice:"-4:" in '.mp4,.mov,.avi' %}
+                                <video controls class="max-w-full h-auto rounded-lg">
+                                    <source src="{{ publication.media.url }}" type="video/{{ publication.media.name|lower|slice:-3 }}">
+                                    Votre navigateur ne supporte pas la vidéo.
+                                </video>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    <p class="text-sm text-gray-500 mb-4">
+                        Par <a href="{% url 'profile' publication.user.username %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue">{{ publication.user.username }}</a> le {{ publication.created_at|date:"d/m/Y H:i" }}
+                        {% if user.is_authenticated %}
+                            <form method="POST" action="{% url 'report_user' publication.user.pk %}" class="inline report-form" data-user-id="{{ publication.user.pk }}">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-500 hover:text-red-600 text-sm ml-2">Signaler</button>
+                            </form>
+                        {% endif %}
+                    </p>
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="flex items-center space-x-2">
+                            <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="like-form" data-publication-id="{{ publication.pk }}" data-action="like">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="like">
+                                <button type="submit" class="flex items-center space-x-1 text-zevaba-dark-blue hover:text-zevaba-light-blue transition-colors">
+                                    <i class="fa {% if request.user in publication.liked_by.all %}fa-solid fa-thumbs-up text-zevaba-light-blue{% else %}fa-regular fa-thumbs-up{% endif %}"></i>
+                                    <span class="like-count">{{ publication.likes }}</span>
+                                </button>
+                            </form>
+                            <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="dislike-form" data-publication-id="{{ publication.pk }}" data-action="dislike">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="dislike">
+                                <button type="submit" class="flex items-center space-x-1 text-zevaba-dark-blue hover:text-zevaba-light-blue transition-colors">
+                                    <i class="fa {% if request.user in publication.disliked_by.all %}fa-solid fa-thumbs-down text-zevaba-light-blue{% else %}fa-regular fa-thumbs-down{% endif %}"></i>
+                                    <span class="dislike-count">{{ publication.dislikes }}</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% if user.is_authenticated %}
+                        <div class="reaction-section">
+                            <form method="POST" action="{% url 'react' publication.pk %}" class="reaction-form flex flex-col space-y-2" data-publication-id="{{ publication.pk }}">
+                                {% csrf_token %}
+                                <div class="flex flex-wrap gap-2 mb-2">
+                                    {% for reaction_type, reaction_label in reaction_choices %}
+                                        <label class="flex items-center">
+                                            <input type="radio" name="type" value="{{ reaction_type }}" class="hidden peer" required>
+                                            <span class="bg-zevaba-light-blue text-white px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-zevaba-dark-blue transition-colors peer-checked:bg-zevaba-dark-blue">{{ reaction_label }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <input type="text" name="comment" placeholder="Ajouter un commentaire..." class="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue" required>
+                                    <button type="submit" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded-lg hover:bg-zevaba-dark-blue/80 transition-colors">Envoyer</button>
+                                </div>
+                                <p class="text-red-500 text-sm hidden error-message">Veuillez sélectionner un type de réaction et entrer un commentaire.</p>
+                            </form>
+                            <a href="{% url 'send_message' publication.user.pk %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue text-sm mt-2 inline-block">Envoyer un message privé</a>
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-gray-500 mb-4">Connectez-vous pour réagir à cette publication ou envoyer un message.</p>
+                    {% endif %}
+                    <div class="comments-section">
+                        <h4 class="text-sm font-semibold text-zevaba-dark-blue mb-2">Commentaires</h4>
+                        <div class="comments-list space-y-2" data-publication-id="{{ publication.pk }}">
+                            {% for reaction in publication.reaction_set.all %}
+                                <div class="bg-gray-100 p-3 rounded-lg">
+                                    <p class="text-sm font-medium text-gray-800">
+                                        <a href="{% url 'profile' reaction.user.username %}" class="hover:underline">{{ reaction.user.username }}</a> ({{ reaction.get_type_display }})
+                                        {% if user.is_authenticated %}
+                                            <form method="POST" action="{% url 'report_user' reaction.user.pk %}" class="inline report-form" data-user-id="{{ reaction.user.pk }}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="text-red-500 hover:text-red-600 text-sm ml-2">Signaler</button>
+                                            </form>
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-sm text-gray-600">{{ reaction.comment }}</p>
+                                    <p class="text-xs text-gray-500">{{ reaction.created_at|date:"d/m/Y H:i" }}</p>
+                                </div>
+                            {% endfor %}
+                            {% if not publication.reaction_set.exists %}
+                                <p class="text-sm text-gray-500">Aucun commentaire pour le moment.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Handle reaction form submissions
+            const reactionForms = document.querySelectorAll('.reaction-form');
+            reactionForms.forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const publicationId = form.getAttribute('data-publication-id');
+                    const actionUrl = form.getAttribute('action');
+                    const commentInput = form.querySelector('input[name="comment"]');
+                    const reactionType = form.querySelector('input[name="type"]:checked');
+                    const errorMessage = form.querySelector('.error-message');
+
+                    if (!reactionType || !commentInput.value.trim()) {
+                        errorMessage.classList.remove('hidden');
+                        return;
+                    } else {
+                        errorMessage.classList.add('hidden');
+                    }
+
+                    fetch(actionUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const commentsList = document.querySelector(`.comments-list[data-publication-id="${publicationId}"]`);
+                            const noComments = commentsList.querySelector('p.text-gray-500');
+                            if (noComments) {
+                                noComments.remove();
+                            }
+                            const newComment = document.createElement('div');
+                            newComment.className = 'bg-gray-100 p-3 rounded-lg';
+                            newComment.innerHTML = `
+                                <p class="text-sm font-medium text-gray-800">
+                                    <a href="/profile/${data.username}/" class="hover:underline">${data.username}</a> (${data.reaction_type_label})
+                                    <form method="POST" action="/report/user/${data.user_id}/" class="inline report-form" data-user-id="${data.user_id}">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="${formData.get('csrfmiddlewaretoken')}">
+                                        <button type="submit" class="text-red-500 hover:text-red-600 text-sm ml-2">Signaler</button>
+                                    </form>
+                                </p>
+                                <p class="text-sm text-gray-600">${data.comment}</p>
+                                <p class="text-xs text-gray-500">${data.created_at}</p>
+                            `;
+                            commentsList.prepend(newComment);
+                            commentInput.value = '';
+                            form.querySelectorAll('input[name="type"]').forEach(input => input.checked = false);
+                        } else {
+                            errorMessage.textContent = `Erreur : ${data.error}`;
+                            errorMessage.classList.remove('hidden');
+                        }
+                    })
+                    .catch(error => {
+                        errorMessage.textContent = 'Erreur réseau. Veuillez réessayer.';
+                        errorMessage.classList.remove('hidden');
+                        console.error('Error:', error);
+                    });
+                });
+            });
+
+            // Handle like/dislike form submissions
+            const likeDislikeForms = document.querySelectorAll('.like-form, .dislike-form');
+            likeDislikeForms.forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const publicationId = form.getAttribute('data-publication-id');
+                    const action = form.getAttribute('data-action');
+                    const actionUrl = form.getAttribute('action');
+                    fetch(actionUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const likeButton = document.querySelector(`.like-form[data-publication-id="${publicationId}"] button i`);
+                            const dislikeButton = document.querySelector(`.dislike-form[data-publication-id="${publicationId}"] button i`);
+                            const likeCount = document.querySelector(`.like-form[data-publication-id="${publicationId}"] .like-count`);
+                            const dislikeCount = document.querySelector(`.dislike-form[data-publication-id="${publicationId}"] .dislike-count`);
+                            likeCount.textContent = data.likes;
+                            dislikeCount.textContent = data.dislikes;
+                            likeButton.className = `fa ${data.user_liked ? 'fa-solid fa-thumbs-up text-zevaba-light-blue' : 'fa-regular fa-thumbs-up text-zevaba-dark-blue'}`;
+                            dislikeButton.className = `fa ${data.user_disliked ? 'fa-solid fa-thumbs-down text-zevaba-light-blue' : 'fa-regular fa-thumbs-down text-zevaba-dark-blue'}`;
+                        } else {
+                            alert('Erreur : ' + data.error);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            });
+
+            // Handle report form submissions
+            const reportForms = document.querySelectorAll('.report-form');
+            reportForms.forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const userId = form.getAttribute('data-user-id');
+                    const actionUrl = form.getAttribute('action');
+                    fetch(actionUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Utilisateur signalé avec succès.');
+                        } else {
+                            alert('Erreur : ' + data.error);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            });
+        });
+    </script>
+{% endblock %}

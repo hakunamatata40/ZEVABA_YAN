@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Recherche{% endblock %}
+{% block content %}
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4 text-zevaba-dark-blue">Résultats de recherche pour "{{ query }}"</h1>
+        <form method="GET" action="{% url 'search' %}" class="flex items-center space-x-2 mb-6">
+            <input type="text" name="query" value="{{ query }}" placeholder="Rechercher utilisateurs ou clubs..." class="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue">
+            <button type="submit" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded-lg hover:bg-zevaba-dark-blue/80 transition-colors">Rechercher</button>
+        </form>
+        <h2 class="text-xl font-bold mb-2 text-zevaba-dark-blue">Utilisateurs</h2>
+        <div class="space-y-4">
+            {% for user in users %}
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <a href="{% url 'profile' user.username %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue font-bold">{{ user.username }}</a>
+                    {% if request.user.is_authenticated and request.user != user %}
+                        <a href="{% url 'send_message' user.pk %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue ml-4">Envoyer un message</a>
+                        <form method="POST" action="{% url 'report_user' user.pk %}" class="inline report-form" data-user-id="{{ user.pk }}">
+                            {% csrf_token %}
+                            <button type="submit" class="text-red-500 hover:text-red-600 ml-4">Signaler</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            {% if not users %}
+                <p class="text-gray-500">Aucun utilisateur trouvé.</p>
+            {% endif %}
+        </div>
+        <h2 class="text-xl font-bold mb-2 mt-6 text-zevaba-dark-blue">Clubs</h2>
+        <div class="space-y-4">
+            {% for club in clubs %}
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <a href="{% url 'club_detail' club.pk %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue font-bold">{{ club.name }}</a>
+                    <p class="text-gray-600">{{ club.description|truncatewords:20 }}</p>
+                    {% if request.user.is_authenticated %}
+                        {% if request.user in club.members.all %}
+                            <form method="POST" action="{% url 'club_unsubscribe' club.pk %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors mt-2">Se désabonner</button>
+                            </form>
+                        {% else %}
+                            <form method="POST" action="{% url 'club_subscribe' club.pk %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="bg-zevaba-light-blue text-white px-4 py-2 rounded hover:bg-zevaba-light-blue/80 transition-colors mt-2">S'abonner</button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+            {% if not clubs %}
+                <p class="text-gray-500">Aucun club trouvé.</p>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const reportForms = document.querySelectorAll('.report-form');
+            reportForms.forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const userId = form.getAttribute('data-user-id');
+                    const actionUrl = form.getAttribute('action');
+                    fetch(actionUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Utilisateur signalé avec succès.');
+                        } else {
+                            alert('Erreur : ' + data.error);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                });
+            });
+        });
+    </script>
+{% endblock %}

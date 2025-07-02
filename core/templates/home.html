@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title %}Accueil - ZEVABA{% endblock %}
+{% block content %}
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold mb-6 text-zevaba-dark-blue">Bienvenue sur ZEVABA</h1>
+        
+        <!-- Search Bar with Autocomplete -->
+        <div class="mb-6 relative">
+            <input type="text" id="search-input" placeholder="Rechercher utilisateurs ou clubs..." class="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue" autocomplete="off">
+            <div id="search-suggestions" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 hidden max-h-96 overflow-y-auto">
+                <div id="users-section" class="p-2">
+                    <h3 class="text-sm font-semibold text-zevaba-dark-blue">Utilisateurs</h3>
+                    <div id="users-list"></div>
+                </div>
+                <div id="clubs-section" class="p-2 border-t border-gray-200">
+                    <h3 class="text-sm font-semibold text-zevaba-dark-blue">Clubs</h3>
+                    <div id="clubs-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Featured Clubs -->
+        <h2 class="text-xl font-bold mb-4 text-zevaba-dark-blue">Clubs en vedette</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for club in clubs %}
+                <div class="bg-white p-4 rounded-lg shadow hover:shadow-xl transition-shadow">
+                    <a href="{% url 'club_detail' club.pk %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue font-bold">{{ club.name }}</a>
+                    <p class="text-gray-600">{{ club.description|truncatewords:20 }}</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Featured Challenges -->
+        <h2 class="text-xl font-bold mb-4 mt-6 text-zevaba-dark-blue">Défis en vedette</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for challenge in challenges %}
+                <div class="bg-white p-4 rounded-lg shadow hover:shadow-xl transition-shadow">
+                    <h3 class="text-lg font-semibold text-zevaba-dark-blue">{{ challenge.title }}</h3>
+                    <p class="text-gray-600">{{ challenge.description|truncatewords:20 }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const searchInput = document.getElementById('search-input');
+            const suggestionsBox = document.getElementById('search-suggestions');
+            const usersList = document.getElementById('users-list');
+            const clubsList = document.getElementById('clubs-list');
+
+            searchInput.addEventListener('input', function () {
+                const query = this.value.trim();
+                if (query.length === 0) {
+                    suggestionsBox.classList.add('hidden');
+                    return;
+                }
+
+                fetch(`/search_suggestions/?query=${encodeURIComponent(query)}`, {
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    usersList.innerHTML = '';
+                    clubsList.innerHTML = '';
+                    if (data.users.length === 0 && data.clubs.length === 0) {
+                        suggestionsBox.classList.add('hidden');
+                        return;
+                    }
+
+                    data.users.forEach(user => {
+                        const div = document.createElement('div');
+                        div.className = 'p-2 hover:bg-gray-100 cursor-pointer';
+                        div.innerHTML = `
+                            <a href="/profile/${user.username}/" class="text-zevaba-dark-blue hover:text-zevaba-light-blue">${user.username}</a>
+                            {% if user.is_authenticated %}
+                                <a href="/message/${user.id}/" class="text-sm text-zevaba-dark-blue hover:text-zevaba-light-blue ml-2">Message</a>
+                                <form method="POST" action="/report/user/${user.id}/" class="inline report-form" data-user-id="${user.id}">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                    <button type="submit" class="text-sm text-red-500 hover:text-red-600 ml-2">Signaler</button>
+                                </form>
+                            {% endif %}
+                        `;
+                        usersList.appendChild(div);
+                    });
+
+                    data.clubs.forEach(club => {
+                        const div = document.createElement('div');
+                        div.className = 'p-2 hover:bg-gray-100 cursor-pointer';
+                        div.innerHTML = `
+                            <a href="/club/${club.id}/" class="text-zevaba-dark-blue hover:text-zevaba-light-blue">${club.name}</a>
+                            {% if user.is_authenticated %}
+                                <form method="POST" action="/club/${club.id}/${club.is_member ? 'unsubscribe' : 'subscribe'}/" class="inline">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                    <button type="submit" class="text-sm text-white px-2 py-1 rounded ${club.is_member ? 'bg-red-500 hover:bg-red-600' : 'bg-zevaba-light-blue hover:bg-zevaba-light-blue/80'} ml-2">
+                                        ${club.is_member ? 'Se désabonner' : 'S\'abonner'}
+                                    </button>
+                                </form>
+                            {% endif %}
+                        `;
+                        clubsList.appendChild(div);
+                    });
+
+                    suggestionsBox.classList.remove('hidden');
+                })
+                .catch(error => console.error('Error:', error));
+            });
+
+            // Handle report form submissions
+            document.addEventListener('click', function (e) {
+                const reportForm = e.target.closest('.report-form');
+                if (reportForm) {
+                    e.preventDefault();
+                    const formData = new FormData(reportForm);
+                    const userId = reportForm.getAttribute('data-user-id');
+                    const actionUrl = reportForm.getAttribute('action');
+                    fetch(actionUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                        },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Utilisateur signalé avec succès.');
+                        } else {
+                            alert('Erreur : ' + data.error);
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+            });
+
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                    suggestionsBox.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+{% endblock %}

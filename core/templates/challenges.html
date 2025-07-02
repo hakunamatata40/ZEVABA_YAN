@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Défis Communautaires{% endblock %}
+{% block content %}
+    <h1 class="text-2xl font-bold mb-4">Défis Communautaires</h1>
+    <div class="space-y-4">
+        {% for challenge in challenges %}
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="text-xl font-bold">{{ challenge.title }}</h3>
+                <p>{{ challenge.description|truncatewords:20 }}</p>
+                <p class="text-sm text-gray-500">Du {{ challenge.start_date }} au {{ challenge.end_date }}</p>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

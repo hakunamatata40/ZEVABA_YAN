@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% block title %}Messagerie{% endblock %}
+{% block content %}
+    <div class="container mx-auto p-4 flex flex-col md:flex-row min-h-screen">
+        <!-- Left Side: Search and Recent Conversations -->
+        <div class="w-full md:w-1/3 border-r border-gray-200 pr-4">
+            <h2 class="text-xl font-bold mb-4 text-zevaba-dark-blue">Messagerie</h2>
+            <!-- Message Search Bar -->
+            <div class="mb-4">
+                <input type="text" id="message-search" placeholder="Rechercher dans les messages..." class="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue">
+            </div>
+            <!-- Recent Conversations -->
+            <div id="conversations-list" class="space-y-2 max-h-[calc(100vh-200px)] overflow-y-auto">
+                {% for conv in recent_conversations %}
+                    <div class="conversation-item p-2 rounded-lg hover:bg-gray-100 cursor-pointer {% if conv.selected %}bg-zevaba-light-blue/20{% endif %}" data-type="{{ conv.type }}" data-id="{{ conv.id }}">
+                        <p class="text-sm font-medium text-zevaba-dark-blue">
+                            {% if conv.type == 'user' %}
+                                <i class="fa fa-user mr-2"></i>{{ conv.name }}
+                            {% else %}
+                                <i class="fa fa-users mr-2"></i>{{ conv.name }}
+                            {% endif %}
+                        </p>
+                        <p class="text-xs text-gray-600 truncate">{{ conv.last_message|truncatechars:50 }}</p>
+                        <p class="text-xs text-gray-500">{{ conv.last_message_time|date:"d/m/Y H:i" }}</p>
+                        {% if conv.unread_count > 0 %}
+                            <span class="bg-zevaba-light-blue text-white text-xs rounded-full px-2 py-1 ml-2">{{ conv.unread_count }}</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                {% if not recent_conversations %}
+                    <p class="text-sm text-gray-500">Aucune conversation récente.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right Side: Selected Conversation -->
+        <div class="w-full md:w-2/3 pl-4">
+            <div id="conversation-header" class="text-xl font-bold mb-4 text-zevaba-dark-blue">
+                {% if selected_conversation %}
+                    {% if selected_conversation.type == 'user' %}
+                        Discussion avec {{ selected_conversation.name }}
+                    {% else %}
+                        Messagerie du club {{ selected_conversation.name }}
+                    {% endif %}
+                {% else %}
+                    Sélectionnez une conversation
+                {% endif %}
+            </div>
+            <div id="messages-container" class="space-y-4 max-h-[calc(100vh-250px)] overflow-y-auto mb-4 p-4 bg-gray-50 rounded-lg">
+                {% for message in messages %}
+                    <div class="message-item p-3 rounded-lg {% if message.sender == user %}bg-zevaba-light-blue/10 ml-auto{% else %}bg-gray-100{% endif %} max-w-[70%]">
+                        <p class="text-sm font-medium text-zevaba-dark-blue">
+                            <a href="{% url 'profile' message.sender.username %}" class="hover:underline">{{ message.sender.username }}</a>
+                        </p>
+                        <p class="text-sm text-gray-800">{{ message.content }}</p>
+                        <p class="text-xs text-gray-500">{{ message.created_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                {% endfor %}
+                {% if not messages %}
+                    <p class="text-sm text-gray-500">Aucun message dans cette conversation.</p>
+                {% endif %}
+            </div>
+            {% if user.is_authenticated and selected_conversation %}
+                <form method="POST" id="message-form" class="flex items-center space-x-2" data-type="{{ selected_conversation.type }}" data-id="{{ selected_conversation.id }}">
+                    {% csrf_token %}
+                    <input type="text" name="content" placeholder="Écrire un message..." class="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue" required>
+                    <button type="submit" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded-lg hover:bg-zevaba-dark-blue/80 transition-colors">Envoyer</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const messageSearch = document.getElementById('message-search');
+            const conversationsList = document.getElementById('conversations-list');
+            const messagesContainer = document.getElementById('messages-container');
+            const messageForm = document.getElementById('message-form');
+            const conversationHeader = document.getElementById('conversation-header');
+
+            // Message Search
+            messageSearch.addEventListener('input', function () {
+                const query = this.value.trim();
+                console.log('Search query:', query); // Debug
+                fetch(`/search_messages/?query=${encodeURIComponent(query)}`, {
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => {
+                    console.log('Search response status:', response.status); // Debug
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Search response data:', data); // Debug
+                    conversationsList.innerHTML = '';
+                    if (data.conversations.length === 0) {
+                        conversationsList.innerHTML = '<p class="text-sm text-gray-500">Aucune conversation trouvée.</p>';
+                        return;
+                    }
+                    data.conversations.forEach(conv => {
+                        const div = document.createElement('div');
+                        div.className = `conversation-item p-2 rounded-lg hover:bg-gray-100 cursor-pointer ${conv.selected ? 'bg-zevaba-light-blue/20' : ''}`;
+                        div.dataset.type = conv.type;
+                        div.dataset.id = conv.id;
+                        div.innerHTML = `
+                            <p class="text-sm font-medium text-zevaba-dark-blue">
+                                <i class="fa ${conv.type === 'user' ? 'fa-user' : 'fa-users'} mr-2"></i>${conv.name}
+                            </p>
+                            <p class="text-xs text-gray-600 truncate">${conv.last_message.substring(0, 50)}${conv.last_message.length > 50 ? '...' : ''}</p>
+                            <p class="text-xs text-gray-500">${conv.last_message_time}</p>
+                            ${conv.unread_count > 0 ? `<span class="bg-zevaba-light-blue text-white text-xs rounded-full px-2 py-1 ml-2">${conv.unread_count}</span>` : ''}
+                        `;
+                        conversationsList.appendChild(div);
+                    });
+                })
+                .catch(error => console.error('Search error:', error));
+            });
+
+            // Select Conversation
+            conversationsList.addEventListener('click', function (e) {
+                const item = e.target.closest('.conversation-item');
+                if (item) {
+                    const type = item.dataset.type;
+                    const id = item.dataset.id;
+                    console.log('Selecting conversation:', type, id); // Debug
+                    fetch(`/messages/?type=${type}&id=${id}`, {
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => {
+                        console.log('Conversation response status:', response.status); // Debug
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Conversation response data:', data); // Debug
+                        messagesContainer.innerHTML = '';
+                        conversationHeader.innerHTML = data.selected_conversation ? 
+                            (data.selected_conversation.type === 'user' ? 
+                                `Discussion avec ${data.selected_conversation.name}` : 
+                                `Messagerie du club ${data.selected_conversation.name}`) : 
+                            'Sélectionnez une conversation';
+                        if (data.messages.length === 0) {
+                            messagesContainer.innerHTML = '<p class="text-sm text-gray-500">Aucun message dans cette conversation.</p>';
+                        } else {
+                            data.messages.forEach(msg => {
+                                const div = document.createElement('div');
+                                div.className = `message-item p-3 rounded-lg ${msg.is_sender ? 'bg-zevaba-light-blue/10 ml-auto' : 'bg-gray-100'} max-w-[70%]`;
+                                div.innerHTML = `
+                                    <p class="text-sm font-medium text-zevaba-dark-blue">
+                                        <a href="/profile/${msg.sender}/" class="hover:underline">${msg.sender}</a>
+                                    </p>
+                                    <p class="text-sm text-gray-800">${msg.content}</p>
+                                    <p class="text-xs text-gray-500">${msg.created_at}</p>
+                                `;
+                                messagesContainer.appendChild(div);
+                            });
+                        }
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        if (messageForm) {
+                            messageForm.dataset.type = type;
+                            messageForm.dataset.id = id;
+                            messageForm.style.display = data.selected_conversation ? 'flex' : 'none';
+                        }
+                        document.querySelectorAll('.conversation-item').forEach(el => el.classList.remove('bg-zevaba-light-blue/20'));
+                        item.classList.add('bg-zevaba-light-blue/20');
+                    })
+                    .catch(error => console.error('Conversation fetch error:', error));
+                }
+            });
+
+            // Send Message
+            if (messageForm) {
+                messageForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    const type = this.dataset.type;
+                    const id = this.dataset.id;
+                    const actionUrl = type === 'user' ? `/message/${id}/` : `/club/${id}/messages/`;
+                    console.log('Sending message to:', actionUrl); // Debug
+                    fetch(actionUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                    })
+                    .then(response => {
+                        console.log('Send message response status:', response.status); // Debug
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Send message response data:', data); // Debug
+                        if (data.success) {
+                            const noMessages = messagesContainer.querySelector('p.text-gray-500');
+                            if (noMessages) noMessages.remove();
+                            const div = document.createElement('div');
+                            div.className = 'message-item p-3 rounded-lg bg-zevaba-light-blue/10 ml-auto max-w-[70%]';
+                            div.innerHTML = `
+                                <p class="text-sm font-medium text-zevaba-dark-blue">
+                                    <a href="/profile/${data.sender}/" class="hover:underline">${data.sender}</a>
+                                </p>
+                                <p class="text-sm text-gray-800">${data.content}</p>
+                                <p class="text-xs text-gray-500">${data.created_at}</p>
+                            `;
+                            messagesContainer.appendChild(div);
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                            messageForm.querySelector('input[name="content"]').value = '';
+                            // Update recent conversations
+                            fetch('/messages/', {
+                                headers: {
+                                    'X-CSRFToken': '{{ csrf_token }}',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                console.log('Conversations update:', data); // Debug
+                                conversationsList.innerHTML = '';
+                                data.conversations.forEach(conv => {
+                                    const div = document.createElement('div');
+                                    div.className = `conversation-item p-2 rounded-lg hover:bg-gray-100 cursor-pointer ${conv.selected ? 'bg-zevaba-light-blue/20' : ''}`;
+                                    div.dataset.type = conv.type;
+                                    div.dataset.id = conv.id;
+                                    div.innerHTML = `
+                                        <p class="text-sm font-medium text-zevaba-dark-blue">
+                                            <i class="fa ${conv.type === 'user' ? 'fa-user' : 'fa-users'} mr-2"></i>${conv.name}
+                                        </p>
+                                        <p class="text-xs text-gray-600 truncate">${conv.last_message.substring(0, 50)}${conv.last_message.length > 50 ? '...' : ''}</p>
+                                        <p class="text-xs text-gray-500">${conv.last_message_time}</p>
+                                        ${conv.unread_count > 0 ? `<span class="bg-zevaba-light-blue text-white text-xs rounded-full px-2 py-1 ml-2">${conv.unread_count}</span>` : ''}
+                                    `;
+                                    conversationsList.appendChild(div);
+                                });
+                            })
+                            .catch(error => console.error('Conversations update error:', error));
+                        } else {
+                            alert('Erreur : ' + data.error);
+                        }
+                    })
+                    .catch(error => console.error('Send message error:', error));
+                });
+            }
+        });
+    </script>
+{% endblock %}

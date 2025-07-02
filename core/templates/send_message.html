@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Envoyer un message{% endblock %}
+{% block content %}
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4 text-zevaba-dark-blue">Envoyer un message à {{ recipient.username }}</h1>
+        <a href="{% url 'profile' recipient.username %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue mb-4 inline-block">Retour au profil</a>
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded-lg hover:bg-zevaba-dark-blue/80 transition-colors">Envoyer</button>
+        </form>
+    </div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+    <h1 class="text-2xl font-bold mb-4">Notifications</h1>
+    <div class="space-y-4">
+        {% for notification in notifications %}
+            <div class="bg-white p-4 rounded-lg shadow {% if not notification.read %}bg-zevaba-light-blue{% endif %}">
+                <p>{{ notification.message }}</p>
+                <p class="text-sm text-gray-500">Le {{ notification.created_at }}</p>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

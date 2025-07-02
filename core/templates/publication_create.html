@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Créer une Publication{% endblock %}
+{% block content %}
+    <div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold text-zevaba-dark-blue mb-4">Créer une Publication</h1>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="{{ form.content.id_for_label }}" class="block text-sm font-medium text-gray-700">Contenu</label>
+                {{ form.content }}
+            </div>
+            <div class="mb-4">
+                <label for="{{ form.type.id_for_label }}" class="block text-sm font-medium text-gray-700">Type</label>
+                {{ form.type }}
+            </div>
+            <div class="mb-4">
+                <label for="{{ form.domain.id_for_label }}" class="block text-sm font-medium text-gray-700">Domaine</label>
+                {{ form.domain }}
+            </div>
+            <div class="mb-4">
+                <label for="{{ form.club.id_for_label }}" class="block text-sm font-medium text-gray-700">Club (optionnel)</label>
+                {{ form.club }}
+            </div>
+            <div class="mb-4">
+                <label for="{{ form.media.id_for_label }}" class="block text-sm font-medium text-gray-700">Média (image, vidéo, PDF)</label>
+                {{ form.media }}
+            </div>
+            <button type="submit" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded w-full hover:bg-zevaba-dark-blue/80 transition-colors">Publier</button>
+        </form>
+    </div>
+{% endblock %}

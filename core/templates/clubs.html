@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Clubs{% endblock %}
+{% block content %}
+    <h1 class="text-2xl font-bold mb-4">Clubs</h1>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% for club in clubs %}
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="text-xl font-bold">{{ club.name }}</h3>
+                <p>{{ club.description|truncatewords:20 }}</p>
+                <a href="{% url 'club_detail' club.pk %}" class="text-zevaba-dark-blue">Voir plus</a>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}
