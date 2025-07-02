@@ -183,42 +183,49 @@ def club_detail(request, pk):
 @login_required
 def club_subscribe(request, pk):
     club = get_object_or_404(Club, pk=pk)
-    if request.user not in club.joined_clubs.all():
-        club.joined_clubs.add(request.user)
+    logger.info(f"Attempting to subscribe user {request.user.username} to club {club.name}")
+    if request.user not in club.members.all():
+        club.members.add(request.user)
         Notification.objects.create(
             user=club.creator,
             message=f"{request.user.username} s'est abonné à votre club {club.name}"
         )
         logger.info(f"{request.user.username} subscribed to club {club.name}")
+    else:
+        logger.info(f"{request.user.username} is already a member of club {club.name}")
     return redirect('club_detail', pk=pk)
 
 @require_POST
 @login_required
 def club_unsubscribe(request, pk):
     club = get_object_or_404(Club, pk=pk)
-    if request.user in club.joined_clubs.all():
-        club.joined_clubs.remove(request.user)
+    logger.info(f"Attempting to unsubscribe user {request.user.username} from club {club.name}")
+    if request.user in club.members.all():
+        club.members.remove(request.user)
         logger.info(f"{request.user.username} unsubscribed from club {club.name}")
+    else:
+        logger.info(f"{request.user.username} is not a member of club {club.name}")
     return redirect('club_detail', pk=pk)
 
 @require_POST
 @login_required
 def club_manage_admins(request, pk):
     club = get_object_or_404(Club, pk=pk)
-    if request.user != club.creator and request.user not in club.admin_clubs.all():
+    if request.user != club.creator and request.user not in club.admins.all():
+        logger.error(f"Unauthorized access by {request.user.username} to manage admins of club {club.name}")
         return HttpResponseBadRequest("Accès non autorisé")
     user_id = request.POST.get('user_id')
     action = request.POST.get('action')
     user = get_object_or_404(User, pk=user_id)
     if action == 'add_admin':
-        club.admin_clubs.add(user)
+        club.admins.add(user)
         Notification.objects.create(
             user=user,
             message=f"Vous avez été nommé admin du club {club.name}"
         )
         logger.info(f"{user.username} added as admin to club {club.name}")
     elif action == 'remove_admin':
-        club.admin_clubs.remove(user)
+        club.admins.remove(user)
         Notification.objects.create(
             user=user,
             message=f"Vous n'êtes plus admin du club {club.name}"
@@ -258,7 +265,7 @@ def search_suggestions(request):
     clubs = Club.objects.filter(name__icontains=query)[:5]
     data = {
         'users': [{'id': user.id, 'username': user.username} for user in users],
-        'clubs': [{'id': club.id, 'name': club.name, 'is_member': request.user in club.joined_clubs.all()} for club in clubs]
+        'clubs': [{'id': club.id, 'name': club.name, 'is_member': request.user in club.members.all()} for club in clubs]
     }
     logger.info(f"Search suggestions response: {data}")
     return JsonResponse(data)
@@ -305,10 +312,10 @@ def messages(request):
     ).order_by('-last_message_time')[:10]
     
     club_convs = ClubMessage.objects.filter(
-        club__club_members=request.user
+        club__members=request.user
     ).values('club').annotate(
         last_message_time=Max('created_at'),
-        unread_count=Count('id', filter=Q(club__club_members=request.user))
+        unread_count=Count('id', filter=Q(club__members=request.user))
     ).order_by('-last_message_time')[:10]
     
     conversations = []
@@ -372,7 +379,7 @@ def messages(request):
         elif conv_type == 'club':
             try:
                 club = get_object_or_404(Club, pk=conv_id)
-                if request.user not in club.joined_clubs.all():
+                if request.user not in club.members.all():
                     logger.error(f"User {request.user.username} is not a member of club {club.name}")
                     return HttpResponseBadRequest("Vous devez être membre du club")
                 selected_conversation = {
@@ -430,11 +437,11 @@ def search_messages(request):
     ).order_by('-last_message_time')[:10]
     
     club_convs = ClubMessage.objects.filter(
-        club__club_members=request.user,
+        club__members=request.user,
         content__icontains=query
     ).values('club').annotate(
         last_message_time=Max('created_at'),
-        unread_count=Count('id', filter=Q(club__club_members=request.user))
+        unread_count=Count('id', filter=Q(club__members=request.user))
     ).order_by('-last_message_time')[:10]
     
     conversations = []
@@ -480,7 +487,9 @@ def search_messages(request):
 @login_required
 def club_messages(request, pk):
     club = get_object_or_404(Club, pk=pk)
-    if request.user not in club.joined_clubs.all():
+    logger.info(f"Accessing club messages for club {club.name} by user {request.user.username}")
+    if request.user not in club.members.all():
+        logger.error(f"User {request.user.username} is not a member of club {club.name}")
         return HttpResponseBadRequest("Vous devez être membre du club pour accéder à la messagerie")
     if request.method == 'POST':
         form = ClubMessageForm(request.POST)
@@ -489,7 +498,7 @@ def club_messages(request, pk):
             message.sender = request.user
             message.club = club
             message.save()
-            for member in club.joined_clubs.exclude(id=request.user.id):
+            for member in club.members.exclude(id=request.user.id):
                 Notification.objects.create(
                     user=member,
                     message=f"Nouveau message dans le club {club.name} de {request.user.username}"
