@@ -7,7 +7,7 @@ environ.Env.read_env()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = env('SECRET_KEY', default='your-secret-key')
-DEBUG = env.bool('DEBUG', default=True)
+DEBUG = False
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'zevaba.onrender.com']
 
