@@ -72,5 +72,21 @@
     <footer class="bg-gray-200 text-center p-4 mt-8">
         <p>© 2025 ZEVABA. Tous droits réservés.</p>
     </footer>
+    <script>
+    const menuBtn = document.getElementById('menu-btn');
+    const closeBtn = document.getElementById('close-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+
+    menuBtn.addEventListener('click', () => {
+        mobileMenu.classList.remove('translate-x-full');
+        mobileMenu.classList.add('translate-x-0');
+    });
+
+    closeBtn.addEventListener('click', () => {
+        mobileMenu.classList.add('translate-x-full');
+        mobileMenu.classList.remove('translate-x-0');
+    });
+</script>
+
 </body>
 </html>
