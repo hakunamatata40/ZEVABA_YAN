@@ -1,8 +1,26 @@
 from django import forms
 from django.contrib.auth import get_user_model
 User = get_user_model()
-from .models import Club, Publication, Report, Message, ClubMessage
+from .models import Club,Page, Publication, Report, Message, ClubMessage
 from django.contrib.auth.forms import UserCreationForm
+
+class ClubForm(forms.ModelForm):
+    class Meta:
+        model = Club
+        fields = ['name', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'w-full p-3 border rounded-lg', 'placeholder': 'Nom du club'}),
+            'description': forms.Textarea(attrs={'class': 'w-full p-3 border rounded-lg', 'rows': 4, 'placeholder': 'Décris ton club...'}),
+        }
+
+class PageForm(forms.ModelForm):
+    class Meta:
+        model = Page
+        fields = ['name', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'w-full p-3 border rounded-lg', 'placeholder': 'Nom de la page'}),
+            'description': forms.Textarea(attrs={'class': 'w-full p-3 border rounded-lg', 'rows': 4, 'placeholder': 'À propos de cette page...'}),
+        }
 
 class UserRegisterForm(UserCreationForm):
     email = forms.EmailField(required=True)

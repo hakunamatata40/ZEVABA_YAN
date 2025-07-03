@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Créer un Club{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-6 mt-8">
+    <h1 class="text-2xl font-bold text-blue-600 mb-4">✨ Crée ton club</h1>
+    <form method="POST" class="space-y-4">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition">Créer le club</button>
+    </form>
+</div>
+{% endblock %}

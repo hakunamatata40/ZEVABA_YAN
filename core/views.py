@@ -5,8 +5,8 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from core.models import User, Club, Publication, Reaction, Challenge, Project, Notification, Report, Message, ClubMessage
-from core.forms import UserRegisterForm, PublicationForm, ReportForm, MessageForm, ClubMessageForm
+from core.models import User, Reply,Page,Club, Publication, Reaction, Challenge, Project, Notification, Report, Message, ClubMessage
+from core.forms import ClubForm, PageForm,UserRegisterForm, PublicationForm, ReportForm, MessageForm, ClubMessageForm
 from django.db.models import Q, Max, Count
 import logging
 
@@ -54,15 +54,27 @@ def user_logout(request):
 
 @login_required
 def feed(request):
-    clubs = request.user.joined_clubs.all()
-    publications = Publication.objects.filter(club__in=clubs).order_by('-created_at')
+    followed_users = request.user.following.all()
+    joined_clubs = request.user.joined_clubs.all()
+
+    publications = Publication.objects.filter(
+        Q(user__in=followed_users) |
+        Q(club__in=joined_clubs) |
+        Q(user=request.user)
+    ).order_by('-created_at')
+
     reaction_choices = [
         ('ADHERE', "J'adhère"),
         ('SUPPORT', 'Je soutiens'),
         ('ALTERNATIVE', 'Je propose une alternative'),
         ('CLARIFY', 'Je demande des précisions'),
     ]
-    return render(request, 'feed.html', {'publications': publications, 'reaction_choices': reaction_choices})
+
+    return render(request, 'feed.html', {
+        'publications': publications, 
+        'reaction_choices': reaction_choices
+    })
+
 
 @login_required
 def personalized_feed(request):
@@ -233,22 +245,137 @@ def club_manage_admins(request, pk):
         logger.info(f"{user.username} removed as admin from club {club.name}")
     return redirect('club_manage_admins', pk=pk)
 
+@login_required
+def club_create(request):
+    if request.method == 'POST':
+        form = ClubForm(request.POST)
+        if form.is_valid():
+            club = form.save(commit=False)
+            club.creator = request.user
+            club.save()
+            club.members.add(request.user)
+            return redirect('club_detail', pk=club.id)
+    else:
+        form = ClubForm()
+    return render(request, 'club_create.html', {'form': form})
+@login_required
+def club_edit(request, pk):
+    club = get_object_or_404(Club, pk=pk)
+    if request.user != club.creator and request.user not in club.admins.all():
+        messages.error(request, "Tu n'as pas le droit de modifier ce club.")
+        return redirect('club_detail', pk=club.pk)
+
+    if request.method == 'POST':
+        form = ClubForm(request.POST, request.FILES, instance=club)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Le club a été modifié avec succès.")
+            return redirect('club_detail', pk=club.pk)
+    else:
+        form = ClubForm(instance=club)
+
+    return render(request, 'clubs/club_edit.html', {'form': form, 'club': club})
+
+
+@login_required
+def club_delete(request, pk):
+    club = get_object_or_404(Club, pk=pk)
+    if request.user != club.creator and request.user not in club.admins.all():
+        messages.error(request, "Tu n'as pas l'autorisation de supprimer ce club.")
+        return redirect('club_detail', pk=club.pk)
+
+    if request.method == 'POST':
+        club.delete()
+        messages.success(request, "Le club a été supprimé avec succès.")
+        return redirect('home')
+
+    return render(request, 'clubs/club_confirm_delete.html', {'club': club})
+
+@login_required
+def page_create(request):
+    # À adapter à ton modèle Page
+    if request.method == 'POST':
+        form = PageForm(request.POST)
+        if form.is_valid():
+            page = form.save(commit=False)
+            page.creator = request.user
+            page.save()
+            return redirect('page_detail', pk=page.id)
+    else:
+        form = PageForm()
+    return render(request, 'page_create.html', {'form': form})
+
+@login_required
+def page_edit(request, pk):
+    page = get_object_or_404(Page, pk=pk)
+    if request.user != page.creator:
+        messages.error(request, "Tu n'as pas le droit de modifier cette page.")
+        return redirect('page_detail', pk=page.pk)
+
+    if request.method == 'POST':
+        form = PageForm(request.POST, request.FILES, instance=page)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "La page a été modifiée avec succès.")
+            return redirect('page_detail', pk=page.pk)
+    else:
+        form = PageForm(instance=page)
+
+    return render(request, 'pages/page_edit.html', {'form': form, 'page': page})
+
+
+@login_required
+def page_delete(request, pk):
+    page = get_object_or_404(Page, pk=pk)
+    if request.user != page.creator:
+        messages.error(request, "Tu n'as pas l'autorisation de supprimer cette page.")
+        return redirect('page_detail', pk=page.pk)
+
+    if request.method == 'POST':
+        page.delete()
+        messages.success(request, "La page a été supprimée avec succès.")
+        return redirect('home')
+
+    return render(request, 'pages/page_confirm_delete.html', {'page': page})
 @require_POST
 @login_required
 def report_user(request, pk):
     reported_user = get_object_or_404(User, pk=pk)
     if request.user == reported_user:
-        return JsonResponse({'success': False, 'error': 'Vous ne pouvez pas vous signaler vous-même'})
+        return JsonResponse({'success': False, 'error': 'Vous ne pouvez pas vous signaler vous-même.'})
+
     reason = request.POST.get('reason', '').strip()
     if not reason:
-        return JsonResponse({'success': False, 'error': 'La raison du signalement est requise'})
+        return JsonResponse({'success': False, 'error': 'La raison du signalement est requise.'})
+
+    # Créer le report
     Report.objects.create(
         reporter=request.user,
         reported_user=reported_user,
         reason=reason
     )
-    logger.info(f"User {request.user.username} reported {reported_user.username}")
-    return JsonResponse({'success': True})
+
+    # Compter le nombre de signalements
+    total_reports = Report.objects.filter(reported_user=reported_user).count()
+
+    # Notif à partir de 5 signalements
+    if total_reports == 5:
+        Notification.objects.create(
+            user=reported_user,
+            message="Attention, vous avez reçu 5 signalements. Veuillez respecter les règles de la communauté."
+        )
+
+    # Suspendre le compte 48h à partir de 10 signalements
+    if total_reports >= 10 and not reported_user.is_staff:
+        reported_user.is_active = False
+        reported_user.save()
+        Notification.objects.create(
+            user=reported_user,
+            message="Votre compte a été désactivé pour 48 heures suite à des signalements excessifs."
+        )
+
+    return JsonResponse({'success': True, 'message': 'Signalement envoyé.'})
+
 
 @login_required
 def search(request):
@@ -520,17 +647,58 @@ def challenges(request):
     challenges = Challenge.objects.all()
     return render(request, 'challenges.html', {'challenges': challenges})
 
-@login_required
 def profile(request, username):
-    user = get_object_or_404(User, username=username)
-    publications = Publication.objects.filter(user=user)
-    return render(request, 'profile.html', {'profile_user': user, 'publications': publications})
+    profile_user = get_object_or_404(User, username=username)
+    
+    publications = Publication.objects.filter(user=profile_user)
+    followers_count = profile_user.followers.count()
+    following_count = profile_user.following.count()
+    publications_count = publications.count()
+    clubs_created_count = Club.objects.filter(creator=profile_user).count()
+    clubs_joined_count = Club.objects.filter(members=profile_user).count()
+    pages_created_count = Page.objects.filter(creator=profile_user).count()
+    pages_followed_count = Page.objects.filter(subscribers=profile_user).count()
 
+    is_following = False
+    if request.user.is_authenticated:
+        is_following = request.user in profile_user.followers.all()
+
+    context = {
+        'profile_user': profile_user,
+        'publications': publications,
+        'followers_count': followers_count,
+        'following_count': following_count,
+        'publications_count': publications_count,
+        'clubs_created_count': clubs_created_count,
+        'clubs_joined_count': clubs_joined_count,
+        'pages_created_count': pages_created_count,
+        'pages_followed_count': pages_followed_count,
+        'is_following': is_following
+    }
+    return render(request, 'profile.html', context)
+@login_required
+def publication_edit(request, pk):
+    publication = get_object_or_404(Publication, pk=pk)
+    
+    if request.user != publication.user:
+        return redirect('profile', username=request.user.username)
+
+    if request.method == 'POST':
+        form = PublicationForm(request.POST, request.FILES, instance=publication)
+        if form.is_valid():
+            form.save()
+            return redirect('profile', username=request.user.username)
+    else:
+        form = PublicationForm(instance=publication)
+
+    return render(request, 'publication_edit.html', {'form': form})
 @login_required
 def subscriptions(request):
     user = request.user
     clubs = user.joined_clubs.all()
     return render(request, 'subscriptions.html', {'clubs': clubs})
+
+
 
 @login_required
 def mentorship(request):
@@ -544,6 +712,53 @@ def admin_dashboard(request):
     users = User.objects.all()
     return render(request, 'admin_dashboard.html', {'users': users})
 
+@require_POST
+@login_required
+def reply_to_reaction(request, pk):
+    parent_reaction = get_object_or_404(Reaction, pk=pk)
+    comment = request.POST.get('comment', '').strip()
+
+    if not comment:
+        return JsonResponse({'success': False, 'error': 'Le commentaire ne peut pas être vide'})
+
+    reply = Reaction.objects.create(
+        user=request.user,
+        publication=parent_reaction.publication,
+        type='CLARIFY',  # ou autre valeur par défaut ou envoyée par POST
+        comment=comment,
+        parent=parent_reaction,
+        created_at=timezone.now()
+    )
+
+    return JsonResponse({
+        'success': True,
+        'username': request.user.username,
+        'comment': reply.comment,
+        'created_at': reply.created_at.strftime('%d/%m/%Y %H:%M')
+    })
+
+@require_POST
+@login_required
+def reply(request, reaction_id):
+    comment = request.POST.get('comment')
+    if not comment:
+        return JsonResponse({'success': False, 'error': 'Commentaire requis.'})
+    
+    try:
+        reaction = Reaction.objects.get(pk=reaction_id)
+        reply = Reply.objects.create(
+            reaction=reaction,
+            user=request.user,
+            comment=comment
+        )
+        return JsonResponse({
+            'success': True,
+            'username': reply.user.username,
+            'comment': reply.comment,
+            'created_at': reply.created_at.strftime("%d/%m/%Y %H:%M")
+        })
+    except Reaction.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Réaction introuvable.'})
 @login_required
 def history(request):
     publications = Publication.objects.filter(user=request.user)
@@ -560,3 +775,39 @@ def notifications(request):
 
 def help(request):
     return render(request, 'help.html')
+
+@login_required
+def follow_user(request, username):
+    target_user = get_object_or_404(User, username=username)
+    if target_user != request.user:
+        if request.user in target_user.followers.all():
+            target_user.followers.remove(request.user)
+        else:
+            target_user.followers.add(request.user)
+    return redirect('profile', username=username)
+
+@login_required
+def page_detail(request, pk):
+    page = get_object_or_404(Page, pk=pk)
+    club = getattr(page, 'club', None)  # safely get club or None if none
+
+    context = {
+        'page': page,
+        'club': club,
+    }
+    return render(request, 'page_detail.html', context)
+@login_required
+def page_subscribe(request, pk):
+    page = get_object_or_404(Page, pk=pk)
+    if request.user not in page.subscribers.all():
+        page.subscribers.add(request.user)
+        return JsonResponse({'success': True, 'message': 'Inscription réussie !'})
+    else:
+        return JsonResponse({'success': False, 'message': 'Déjà abonné.'})
+
+@login_required
+def page_unsubscribe(request, pk):
+    page = get_object_or_404(Page, pk=pk)
+    page.subscribers.remove(request.user)
+    messages.success(request, f"Tu t'es désabonné de {page.title}")
+    return redirect('page_detail', pk=pk)

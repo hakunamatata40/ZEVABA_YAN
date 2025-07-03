@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Supprimer {{ page.name }}{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold text-red-600">Supprimer {{ page.name }}</h1>
+<p class="mb-4">Cette action est irréversible. Es-tu sûr ?</p>
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded">Supprimer définitivement</button>
+  <a href="{% url 'page_detail' page.pk %}" class="ml-4 text-zevaba-dark-blue hover:text-zevaba-light-blue">Annuler</a>
+</form>
+{% endblock %}

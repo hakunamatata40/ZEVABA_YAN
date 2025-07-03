@@ -1,89 +1,166 @@
 {% extends 'base.html' %}
 {% block title %}Fil d'Actualité{% endblock %}
+
 {% block content %}
-    <h1 class="text-2xl font-bold mb-4">Fil d'Actualité</h1>
-    <a href="{% url 'publication_create' %}" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded mb-6 hover:bg-zevaba-dark-blue/80 transition-colors inline-block">Créer une publication</a>
-    <div class="space-y-6">
-        {% for publication in publications %}
-            <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <h3 class="text-xl font-bold text-zevaba-dark-blue mb-2">{{ publication.type }} - {{ publication.domain }}</h3>
-                <p class="text-gray-800 mb-4">{{ publication.content }}</p>
-                {% if publication.media %}
-                    <div class="mb-4">
-                        {% if publication.media.name|lower|slice:"-4:" == '.pdf' %}
-                            <a href="{{ publication.media.url }}" class="text-zevaba-light-blue hover:underline" target="_blank">Voir le PDF</a>
-                        {% elif publication.media.name|lower|slice:"-4:" in '.jpg,.jpeg,.png,.gif' %}
-                            <img src="{{ publication.media.url }}" alt="Publication media" class="max-w-full h-auto rounded-lg">
-                        {% elif publication.media.name|lower|slice:"-4:" in '.mp4,.mov,.avi' %}
-                            <video controls class="max-w-full h-auto rounded-lg">
-                                <source src="{{ publication.media.url }}" type="video/{{ publication.media.name|lower|slice:-3 }}">
-                                Votre navigateur ne supporte pas la vidéo.
-                            </video>
-                        {% endif %}
-                    </div>
-                {% endif %}
-                <p class="text-sm text-gray-500 mb-4">Par {{ publication.user.username }}{% if publication.club %} pour {{ publication.club.name }}{% endif %} le {{ publication.created_at|date:"d/m/Y H:i" }}</p>
-                <div class="flex items-center space-x-4 mb-4">
-                    <div class="flex items-center space-x-2">
-                        <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="like-form" data-publication-id="{{ publication.pk }}" data-action="like">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="like">
-                            <button type="submit" class="flex items-center space-x-1 text-zevaba-dark-blue hover:text-zevaba-light-blue transition-colors">
-                                <i class="fa {% if request.user in publication.liked_by.all %}fa-solid fa-thumbs-up text-zevaba-light-blue{% else %}fa-regular fa-thumbs-up{% endif %}"></i>
-                                <span class="like-count">{{ publication.likes }}</span>
-                            </button>
-                        </form>
-                        <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="dislike-form" data-publication-id="{{ publication.pk }}" data-action="dislike">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="dislike">
-                            <button type="submit" class="flex items-center space-x-1 text-zevaba-dark-blue hover:text-zevaba-light-blue transition-colors">
-                                <i class="fa {% if request.user in publication.disliked_by.all %}fa-solid fa-thumbs-down text-zevaba-light-blue{% else %}fa-regular fa-thumbs-down{% endif %}"></i>
-                                <span class="dislike-count">{{ publication.dislikes }}</span>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                {% if user.is_authenticated %}
-                    <div class="reaction-section">
-                        <form method="POST" action="{% url 'react' publication.pk %}" class="reaction-form flex flex-col space-y-2" data-publication-id="{{ publication.pk }}">
-                            {% csrf_token %}
-                            <div class="flex flex-wrap gap-2 mb-2">
-                                {% for reaction_type, reaction_label in reaction_choices %}
-                                    <label class="flex items-center">
-                                        <input type="radio" name="type" value="{{ reaction_type }}" class="hidden peer" required>
-                                        <span class="bg-zevaba-light-blue text-white px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-zevaba-dark-blue transition-colors peer-checked:bg-zevaba-dark-blue">{{ reaction_label }}</span>
-                                    </label>
-                                {% endfor %}
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <input type="text" name="comment" placeholder="Ajouter un commentaire..." class="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue" required>
-                                <button type="submit" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded-lg hover:bg-zevaba-dark-blue/80 transition-colors">Envoyer</button>
-                            </div>
-                            <p class="text-red-500 text-sm hidden error-message">Veuillez sélectionner un type de réaction et entrer un commentaire.</p>
-                        </form>
-                    </div>
-                {% else %}
-                    <p class="text-sm text-gray-500 mb-4">Connectez-vous pour réagir à cette publication.</p>
-                {% endif %}
-                <div class="comments-section">
-                    <h4 class="text-sm font-semibold text-zevaba-dark-blue mb-2">Commentaires</h4>
-                    <div class="comments-list space-y-2" data-publication-id="{{ publication.pk }}">
-                        {% for reaction in publication.reaction_set.all %}
-                            <div class="bg-gray-100 p-3 rounded-lg">
-                                <p class="text-sm font-medium text-gray-800">{{ reaction.user.username }} ({{ reaction.get_type_display }})</p>
-                                <p class="text-sm text-gray-600">{{ reaction.comment }}</p>
-                                <p class="text-xs text-gray-500">{{ reaction.created_at|date:"d/m/Y H:i" }}</p>
-                            </div>
-                        {% endfor %}
-                        {% if not publication.reaction_set.exists %}
-                            <p class="text-sm text-gray-500">Aucun commentaire pour le moment.</p>
-                        {% endif %}
-                    </div>
-                </div>
+<div class="container mx-auto p-4 space-y-6">
+    
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-zevaba-dark-blue">📢 Fil d'Actualité</h1>
+        <a href="{% url 'publication_create' %}" class="bg-zevaba-dark-blue text-white px-5 py-2 rounded-lg hover:bg-zevaba-dark-blue/80 transition duration-300 flex items-center space-x-2">
+            <i class="fa fa-plus"></i><span>Nouvelle publication</span>
+        </a>
+    </div>
+
+    {% for publication in publications %}
+        <div class="bg-white p-6 rounded-2xl shadow-md hover:shadow-lg transition duration-300 space-y-4">
+            
+            <div>
+                <h2 class="text-xl font-bold text-zevaba-dark-blue mb-1">{{ publication.type }} - {{ publication.domain }}</h2>
+                <p class="text-gray-700">{{ publication.content }}</p>
             </div>
+
+            {% if publication.media %}
+                <div class="mb-4">
+                    {% if publication.media.name|lower|slice:"-4:" == '.pdf' %}
+                        <a href="{{ publication.media.url }}" target="_blank" class="text-zevaba-light-blue font-medium hover:underline flex items-center space-x-1">
+                            <i class="fa fa-file-pdf text-red-600"></i> <span>Voir le PDF</span>
+                        </a>
+                    {% elif publication.media.name|lower|slice:"-4:" in '.jpg,.jpeg,.png,.gif' %}
+                        <img src="{{ publication.media.url }}" alt="Image de la publication" class="rounded-lg w-full h-auto object-cover">
+                    {% elif publication.media.name|lower|slice:"-4:" in '.mp4,.mov,.avi' %}
+                        <video controls class="w-full rounded-lg">
+                            <source src="{{ publication.media.url }}" type="video/{{ publication.media.name|lower|slice:-3 }}">
+                            Votre navigateur ne supporte pas la vidéo.
+                        </video>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <p class="text-sm text-gray-500">Publié par <span class="font-medium">{{ publication.user.username }}</span>
+                {% if publication.club %} dans <span class="font-medium">{{ publication.club.name }}</span>{% endif %}
+                le {{ publication.created_at|date:"d/m/Y H:i" }}</p>
+
+            <div class="flex items-center gap-4">
+                <!-- Like -->
+                <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="like-form" data-publication-id="{{ publication.pk }}" data-action="like">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="like">
+                    <button type="submit" class="flex items-center gap-1 text-zevaba-dark-blue hover:text-zevaba-light-blue">
+                        <i class="fa {% if request.user in publication.liked_by.all %}fa-solid fa-thumbs-up text-zevaba-light-blue{% else %}fa-regular fa-thumbs-up{% endif %}"></i>
+                        <span>{{ publication.likes }}</span>
+                    </button>
+                </form>
+
+                <!-- Dislike -->
+                <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="dislike-form" data-publication-id="{{ publication.pk }}" data-action="dislike">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="dislike">
+                    <button type="submit" class="flex items-center gap-1 text-zevaba-dark-blue hover:text-zevaba-light-blue">
+                        <i class="fa {% if request.user in publication.disliked_by.all %}fa-solid fa-thumbs-down text-zevaba-light-blue{% else %}fa-regular fa-thumbs-down{% endif %}"></i>
+                        <span>{{ publication.dislikes }}</span>
+                    </button>
+                </form>
+            </div>
+
+            {% if user.is_authenticated %}
+                <form method="POST" action="{% url 'react' publication.pk %}" class="reaction-form space-y-3 mt-4" data-publication-id="{{ publication.pk }}">
+                    {% csrf_token %}
+                    <div class="flex flex-wrap gap-2">
+                        {% for reaction_type, reaction_label in reaction_choices %}
+                            <label class="flex items-center">
+                                <input type="radio" name="type" value="{{ reaction_type }}" class="hidden peer" required>
+                                <span class="peer-checked:bg-zevaba-dark-blue peer-checked:text-white bg-zevaba-light-blue text-white px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-zevaba-dark-blue transition">{{ reaction_label }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" name="comment" placeholder="Ajouter un commentaire..." class="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue" required>
+                        <button type="submit" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded-lg hover:bg-zevaba-dark-blue/80">Envoyer</button>
+                    </div>
+                    <p class="text-red-500 text-sm hidden error-message">Veuillez sélectionner une réaction et écrire un commentaire.</p>
+                </form>
+            {% else %}
+                <p class="text-sm text-gray-500 mt-2">Connectez-vous pour réagir à cette publication.</p>
+            {% endif %}
+
+          <div class="comments-section mt-4">
+    <h3 class="text-base font-semibold text-zevaba-dark-blue mb-2">💬 Commentaires</h3>
+    <div class="comments-list space-y-2" data-publication-id="{{ publication.pk }}">
+        {% for reaction in publication.reaction_set.all %}
+            <div class="bg-gray-100 p-3 rounded-lg">
+                <p class="text-sm font-medium">{{ reaction.user.username }} ({{ reaction.get_type_display }})</p>
+                <p class="text-sm">{{ reaction.comment }}</p>
+                <p class="text-xs text-gray-500">{{ reaction.created_at|date:"d/m/Y H:i" }}</p>
+
+                <!-- Répondre à ce commentaire -->
+                <button type="button" class="text-sm text-zevaba-light-blue hover:underline mt-1 reply-btn" data-reaction-id="{{ reaction.id }}">
+                    Répondre
+                </button>
+
+                <!-- Liste des réponses -->
+                <div class="replies-list ml-4 mt-2 space-y-2" id="replies-{{ reaction.id }}">
+                    {% for reply in reaction.reply_set.all %}
+                        <div class="bg-gray-200 p-2 rounded-lg">
+                            <p class="text-sm font-medium">{{ reply.user.username }}</p>
+                            <p class="text-sm">{{ reply.comment }}</p>
+                            <p class="text-xs text-gray-500">{{ reply.created_at|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    {% empty %}
+                        <p class="text-xs text-gray-500">Aucune réponse encore.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Formulaire de réponse (caché par défaut) -->
+                {% if user.is_authenticated %}
+                    <form method="POST" action="{% url 'reply' reaction.id %}" class="reply-form mt-2 hidden" id="form-reply-{{ reaction.id }}" data-reaction-id="{{ reaction.id }}">
+            {% csrf_token %}
+                        <input type="text" name="comment" placeholder="Répondre à ce commentaire..." class="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue">
+                        <button type="submit" class="bg-zevaba-dark-blue text-white px-3 py-1 mt-1 rounded-lg hover:bg-zevaba-dark-blue/80">Envoyer</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p class="text-sm text-gray-500">Aucun commentaire pour le moment.</p>
         {% endfor %}
     </div>
+</div>
+
+        </div>
+    {% empty %}
+        <p class="text-gray-600">Aucune publication pour le moment.</p>
+    {% endfor %}
+
+</div>
     <script>
+
+        document.querySelectorAll('.reply-form').forEach(form => {
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const reactionId = this.dataset.reactionId;
+    const comment = this.querySelector('input[name="comment"]').value;
+    const csrfToken = this.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    fetch(`/reaction/${reactionId}/reply/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrfToken,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: `comment=${encodeURIComponent(comment)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // reload page or dynamically add reply (améliorable)
+        location.reload();
+      } else {
+        alert(data.error);
+      }
+    });
+  });
+});
+
         document.addEventListener('DOMContentLoaded', function () {
             // Handle reaction form submissions
             const reactionForms = document.querySelectorAll('.reaction-form');
@@ -144,6 +221,15 @@
                     });
                 });
             });
+// Gestion du bouton Répondre sur chaque commentaire
+document.querySelectorAll('.reply-btn').forEach(button => {
+    button.addEventListener('click', function () {
+        const reactionId = this.getAttribute('data-reaction-id');
+        const form = document.getElementById(`form-reply-${reactionId}`);
+        form.classList.toggle('hidden');
+        form.querySelector('input[name="comment"]').focus();
+    });
+});
 
             // Handle like/dislike form submissions
             const likeDislikeForms = document.querySelectorAll('.like-form, .dislike-form');

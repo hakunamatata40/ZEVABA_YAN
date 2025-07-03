@@ -7,7 +7,8 @@ class User(AbstractUser):
     profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
     is_mentor = models.BooleanField(default=False)
     clubs = models.ManyToManyField('Club', related_name='club_members', blank=True)
-    
+    followers = models.ManyToManyField('self', symmetrical=False, related_name='following', blank=True)
+
     def __str__(self):
         return self.username
 
@@ -48,6 +49,7 @@ class Reaction(models.Model):
         ('ALTERNATIVE', 'Je propose une alternative'),
         ('CLARIFY', 'Je demande des précisions'),
     ])
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='replies')
     comment = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
     
@@ -106,3 +108,22 @@ class ClubMessage(models.Model):
     
     def __str__(self):
         return f"Club message by {self.sender.username} in {self.club.name}"
+    
+class Page(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    title = models.CharField(max_length=255)
+    subscribers = models.ManyToManyField(User, related_name='subscribed_pages', blank=True)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_pages')
+    followers = models.ManyToManyField(User, related_name='followed_pages')
+    created_at = models.DateTimeField(auto_now_add=True)
+    subscribers = models.ManyToManyField(User, related_name='subscribed_pages', blank=True)
+
+    def __str__(self):
+        return self.title
+    
+class Reply(models.Model):
+    reaction = models.ForeignKey(Reaction, related_name='reply_set', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
