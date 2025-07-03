@@ -21,72 +21,94 @@
     </script>
 </head>
 <body class="bg-white text-gray-800">
-   <nav class="fixed top-0 left-0 w-full z-50 bg-zevaba-dark-blue bg-opacity-80 backdrop-blur-md text-white p-4 transition duration-300 ease-in-out">
-    <div class="container mx-auto flex justify-between items-center">
-        <a href="{% url 'home' %}" class="flex items-center space-x-2">
-            <img src="{% static 'images/logo.png' %}" alt="Logo Zevaba" class="w-10 h-10 rounded-full object-cover">
-            <span class="text-2xl font-bold">ZEVABA</span>
-        </a>
 
-        <!-- Desktop Menu -->
-        <div class="hidden md:flex space-x-4">
-            {% if user.is_authenticated %}
-                <a href="{% url 'profile' user.username %}" class="hover:text-zevaba-light-blue transition-colors">Profil</a>
-                <a href="{% url 'feed' %}" class="hover:text-zevaba-light-blue transition-colors">Fil d'actualité</a>
-                <a href="{% url 'clubs' %}" class="hover:text-zevaba-light-blue transition-colors">Clubs</a>
-                <a href="{% url 'logout' %}" class="hover:text-zevaba-light-blue transition-colors">Déconnexion</a>
-            {% else %}
-                <a href="{% url 'login' %}" class="hover:text-zevaba-light-blue transition-colors">Connexion</a>
-                <a href="{% url 'register' %}" class="text-zevaba-light-blue hover:text-white transition-colors">Inscription</a>
-            {% endif %}
+    <!-- NAVBAR -->
+    <nav class="fixed top-0 left-0 w-full z-50 bg-zevaba-dark-blue bg-opacity-80 backdrop-blur-md text-white p-4 transition duration-300 ease-in-out shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="{% url 'home' %}" class="flex items-center space-x-2">
+                <img src="{% static 'images/logo.png' %}" alt="Logo Zevaba" class="w-10 h-10 rounded-full object-cover">
+                <span class="text-2xl font-bold">ZEVABA</span>
+            </a>
+
+            <!-- Desktop Menu -->
+            <div class="hidden md:flex space-x-4">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'profile' user.username %}" class="hover:text-zevaba-light-blue transition-colors">Profil</a>
+                    <a href="{% url 'feed' %}" class="hover:text-zevaba-light-blue transition-colors">Fil d'actualité</a>
+                    <a href="{% url 'clubs' %}" class="hover:text-zevaba-light-blue transition-colors">Clubs</a>
+                    <a href="{% url 'logout' %}" class="hover:text-zevaba-light-blue transition-colors">Déconnexion</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="hover:text-zevaba-light-blue transition-colors">Connexion</a>
+                    <a href="{% url 'register' %}" class="text-zevaba-light-blue hover:text-white transition-colors">Inscription</a>
+                {% endif %}
+            </div>
+
+            <!-- Mobile Hamburger -->
+            <button id="menu-btn" class="md:hidden focus:outline-none">
+                <i class="fas fa-bars text-3xl"></i>
+            </button>
         </div>
 
-        <!-- Mobile Hamburger -->
-        <button id="menu-btn" class="md:hidden focus:outline-none">
-            <i class="fas fa-bars text-3xl"></i>
-        </button>
-    </div>
+        <!-- Mobile Sidebar -->
+        <div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 bg-zevaba-dark-blue text-white transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col space-y-6 p-6">
+            <button id="close-btn" class="self-end text-3xl focus:outline-none">
+                <i class="fas fa-times"></i>
+            </button>
 
-    <!-- Mobile Sidebar -->
-    <div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 bg-zevaba-dark-blue text-white transform translate-x-full transition-transform duration-300 ease-in-out z-50 flex flex-col space-y-6 p-6">
-        <button id="close-btn" class="self-end text-3xl focus:outline-none">
-            <i class="fas fa-times"></i>
-        </button>
+            {% if user.is_authenticated %}
+                <a href="{% url 'profile' user.username %}" class="hover:text-zevaba-light-blue text-xl">Profil</a>
+                <a href="{% url 'feed' %}" class="hover:text-zevaba-light-blue text-xl">Fil d'actualité</a>
+                <a href="{% url 'clubs' %}" class="hover:text-zevaba-light-blue text-xl">Clubs</a>
+                <a href="{% url 'logout' %}" class="hover:text-zevaba-light-blue text-xl">Déconnexion</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="hover:text-zevaba-light-blue text-xl">Connexion</a>
+                <a href="{% url 'register' %}" class="text-zevaba-light-blue hover:text-white text-xl">Inscription</a>
+            {% endif %}
+        </div>
+    </nav>
 
-        {% if user.is_authenticated %}
-            <a href="{% url 'profile' user.username %}" class="hover:text-zevaba-light-blue text-xl">Profil</a>
-            <a href="{% url 'feed' %}" class="hover:text-zevaba-light-blue text-xl">Fil d'actualité</a>
-            <a href="{% url 'clubs' %}" class="hover:text-zevaba-light-blue text-xl">Clubs</a>
-            <a href="{% url 'logout' %}" class="hover:text-zevaba-light-blue text-xl">Déconnexion</a>
-        {% else %}
-            <a href="{% url 'login' %}" class="hover:text-zevaba-light-blue text-xl">Connexion</a>
-            <a href="{% url 'register' %}" class="text-zevaba-light-blue hover:text-white text-xl">Inscription</a>
-        {% endif %}
-    </div>
-</nav>
+    <!-- OVERLAY -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-60 hidden transition-opacity duration-300 ease-in-out z-40"></div>
 
-    <div class="container mx-auto p-4">
+    <!-- MAIN CONTENT -->
+    <div class="container mx-auto p-4 pt-24">
         {% block content %}
         {% endblock %}
     </div>
+
+    <!-- FOOTER -->
     <footer class="bg-gray-200 text-center p-4 mt-8">
         <p>© 2025 ZEVABA. Tous droits réservés.</p>
     </footer>
+
+    <!-- MOBILE MENU SCRIPT -->
     <script>
-    const menuBtn = document.getElementById('menu-btn');
-    const closeBtn = document.getElementById('close-btn');
-    const mobileMenu = document.getElementById('mobile-menu');
+        const menuBtn = document.getElementById('menu-btn');
+        const closeBtn = document.getElementById('close-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const overlay = document.getElementById('overlay');
 
-    menuBtn.addEventListener('click', () => {
-        mobileMenu.classList.remove('translate-x-full');
-        mobileMenu.classList.add('translate-x-0');
-    });
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.remove('translate-x-full');
+            mobileMenu.classList.add('translate-x-0');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('opacity-100');
+        });
 
-    closeBtn.addEventListener('click', () => {
-        mobileMenu.classList.add('translate-x-full');
-        mobileMenu.classList.remove('translate-x-0');
-    });
-</script>
+        closeBtn.addEventListener('click', () => {
+            mobileMenu.classList.add('translate-x-full');
+            mobileMenu.classList.remove('translate-x-0');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('opacity-100');
+        });
+
+        overlay.addEventListener('click', () => {
+            mobileMenu.classList.add('translate-x-full');
+            mobileMenu.classList.remove('translate-x-0');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('opacity-100');
+        });
+    </script>
 
 </body>
 </html>
