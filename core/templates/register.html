@@ -1,66 +1,141 @@
 {% extends 'base.html' %}
 {% block title %}Inscription{% endblock %}
-
+{% load static %}
 {% block content %}
-<div class="max-w-lg mx-auto bg-white p-8 rounded-2xl shadow-lg mt-8">
-    <h1 class="text-3xl font-bold text-center mb-6 text-zevaba-dark-blue">Créer un compte</h1>
+<div class="auth-container animate-fadeIn">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Créer un compte</h1>
+            <div class="auth-logo">
+                <img src="{% static 'images/logo.png' %}" alt="Logo Zevaba">
+            </div>
+        </div>
 
-    <form method="post" enctype="multipart/form-data" class="space-y-5">
-        {% csrf_token %}
+        <form method="post" enctype="multipart/form-data" class="auth-form">
+            {% csrf_token %}
 
-        {% for field in form %}
-            <div class="relative">
-                <label for="{{ field.id_for_label }}" class="block text-sm font-semibold mb-2 text-gray-700">
-                    {{ field.label }}
-                </label>
-                <div class="relative">
+            {% for field in form %}
+            <div class="form-group animate-fadeIn" style="animation-delay: {{ forloop.counter0|add:1|multiply:0.1 }}s">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+
+                <div class="input-with-icon">
+                    {% if field.name == 'username' %}
+                        <i class="fas fa-user"></i>
+                    {% elif field.name == 'email' %}
+                        <i class="fas fa-envelope"></i>
+                    {% elif field.field.widget.input_type == 'password' %}
+                        <i class="fas fa-lock"></i>
+                    {% else %}
+                        <i class="fas fa-pencil-alt"></i>
+                    {% endif %}
+
                     {{ field }}
-                    {% if field.field.widget.input_type == "password" %}
-                        <button type="button" class="absolute inset-y-0 right-3 flex items-center text-gray-500 text-xl password-toggle focus:outline-none">
-                            <i class="fas fa-eye"></i>
-                        </button>
+
+                    {% if field.field.widget.input_type == 'password' %}
+                    <button type="button" class="password-toggle">
+                        <i class="fas fa-eye"></i>
+                    </button>
                     {% endif %}
                 </div>
+
                 {% if field.help_text %}
-                    <p class="text-xs text-gray-500 mt-1">{{ field.help_text }}</p>
+                <div class="help-text">{{ field.help_text }}</div>
                 {% endif %}
+
                 {% for error in field.errors %}
-                    <p class="text-sm text-red-600 mt-1">{{ error }}</p>
+                <div class="error-text">{{ error }}</div>
                 {% endfor %}
             </div>
-        {% endfor %}
+            {% endfor %}
 
-        <button type="submit" class="w-full bg-zevaba-dark-blue hover:bg-zevaba-light-blue text-white font-semibold py-3 rounded-xl transition duration-300 ease-in-out shadow">
-            S'inscrire
-        </button>
-    </form>
+            <button type="submit" class="auth-button">
+                <span>S'inscrire</span>
+                <i class="fas fa-user-plus"></i>
+            </button>
+        </form>
 
-    <p class="mt-6 text-center text-sm text-gray-600">Vous avez déjà un compte ?
-        <a href="{% url 'login' %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue font-medium">Connexion</a>
-    </p>
+        <div class="auth-footer">
+            <p>Vous avez déjà un compte ? <a href="{% url 'login' %}">Connexion</a></p>
+        </div>
+    </div>
 </div>
 
 <style>
-    input, textarea, select {
-        @apply w-full border border-gray-300 rounded-lg py-3 px-4 text-gray-800 focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue transition;
+    /* Styles spécifiques à la page d'inscription */
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--zevaba-dark-blue);
+        font-size: 0.9rem;
+    }
+
+    .help-text {
+        font-size: 0.75rem;
+        color: rgba(30, 58, 138, 0.6);
+        margin-top: 5px;
+    }
+
+    .error-text {
+        font-size: 0.8rem;
+        color: #d32f2f;
+        margin-top: 5px;
+    }
+
+    select {
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231E3A8A'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 15px center;
+        background-size: 15px;
+    }
+
+    /* Animation pour les champs du formulaire */
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fadeIn {
+        animation: slideIn 0.5s ease-out forwards;
+        opacity: 0;
     }
 </style>
 
 <script>
-    const toggles = document.querySelectorAll(".password-toggle");
-    toggles.forEach(toggle => {
-        toggle.addEventListener("click", () => {
-            const input = toggle.previousElementSibling;
-            const icon = toggle.querySelector("i");
-            if (input.type === "password") {
-                input.type = "text";
-                icon.classList.remove("fa-eye");
-                icon.classList.add("fa-eye-slash");
-            } else {
-                input.type = "password";
-                icon.classList.remove("fa-eye-slash");
-                icon.classList.add("fa-eye");
-            }
+    // Gestion des toggles password
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggles = document.querySelectorAll('.password-toggle');
+
+        toggles.forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const input = this.parentNode.querySelector('input');
+                const icon = this.querySelector('i');
+
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        });
+
+        // Animation des champs de formulaire
+        const formGroups = document.querySelectorAll('.form-group');
+        formGroups.forEach((group, index) => {
+            group.style.animationDelay = `${index * 0.1}s`;
         });
     });
 </script>

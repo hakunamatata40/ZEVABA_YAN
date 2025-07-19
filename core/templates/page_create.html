@@ -2,12 +2,418 @@
 {% block title %}Créer une Page{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-6 mt-8">
-    <h1 class="text-2xl font-bold text-green-600 mb-4">📄 Crée une page</h1>
-    <form method="POST" class="space-y-4">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg transition">Créer la page</button>
-    </form>
+<div class="create-page-container">
+    <div class="create-page-card">
+        <!-- Header with animated elements -->
+        <div class="form-header">
+            <div class="header-icon">📄</div>
+            <h1 class="form-title">Crée ta page</h1>
+            <p class="form-subtitle">Partage tes idées avec ta communauté</p>
+        </div>
+
+        <!-- Form with improved styling -->
+        <form method="POST" class="page-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="{{ form.name.id_for_label }}" class="form-label">Nom de la page</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                    <div class="error-message">{{ form.name.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <div class="error-message">{{ form.description.errors }}</div>
+                {% endif %}
+                <p class="form-hint">Décris l'objectif de ta page en quelques mots</p>
+            </div>
+
+            <!-- <div class="form-group">
+                <label for="{{ form.category.id_for_label }}" class="form-label">Catégorie</label>
+                {{ form.category }}
+                {% if form.category.errors %}
+                    <div class="error-message">{{ form.category.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.image.id_for_label }}" class="form-label">Image de couverture (optionnel)</label>
+                <div class="file-upload-wrapper">
+                    <div class="file-upload">
+                        {{ form.image }}
+                        <label for="{{ form.image.id_for_label }}" class="file-upload-label">
+                            <i class="fas fa-image"></i> Choisir une image
+                        </label>
+                        <span class="file-name" id="file-name">Aucun fichier sélectionné</span>
+                    </div>
+                    <div class="image-preview" id="image-preview"></div>
+                </div>
+                {% if form.image.errors %}
+                    <div class="error-message">{{ form.image.errors }}</div>
+                {% endif %}
+            </div> -->
+
+            <!-- <div class="form-group">
+                <label for="{{ form.content.id_for_label }}" class="form-label">Contenu initial</label>
+                {{ form.content }}
+                {% if form.content.errors %}
+                    <div class="error-message">{{ form.content.errors }}</div>
+                {% endif %}
+            </div> -->
+
+            <div class="form-footer">
+                <button type="submit" class="submit-button">
+                    <span class="button-text">Publier la page</span>
+                    <i class="fas fa-paper-plane button-icon"></i>
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
+
+<style>
+    /* Base Styles */
+    :root {
+        --primary-color: #28a745;
+        --primary-dark: #218838;
+        --primary-light: #d4edda;
+        --secondary-color: #20c997;
+        --accent-color: #ffc107;
+        --dark-color: #1a1a2e;
+        --light-color: #f8f9fa;
+        --gray-color: #6c757d;
+        --danger-color: #dc3545;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        --transition: all 0.3s ease;
+    }
+
+    .create-page-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .create-page-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .create-page-card:hover {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Form Header */
+    .form-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 30px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .header-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        display: inline-block;
+        animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-20px); }
+        60% { transform: translateY(-10px); }
+    }
+
+    .form-title {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        position: relative;
+    }
+
+    .form-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        position: relative;
+    }
+
+    /* Form Styles */
+    .page-form {
+        padding: 30px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--dark-color);
+    }
+
+    .page-form input[type="text"],
+    .page-form input[type="file"],
+    .page-form select,
+    .page-form textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .page-form textarea {
+        min-height: 150px;
+        resize: vertical;
+    }
+
+    .page-form input[type="text"]:focus,
+    .page-form select:focus,
+    .page-form textarea:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+    }
+
+    .form-hint {
+        font-size: 0.85rem;
+        color: var(--gray-color);
+        margin-top: 5px;
+    }
+
+    /* File Upload */
+    .file-upload-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .file-upload {
+        position: relative;
+    }
+
+    .file-upload input[type="file"] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+
+    .file-upload-label {
+        display: inline-block;
+        padding: 12px 15px;
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: var(--transition);
+        border: 1px dashed var(--primary-color);
+    }
+
+    .file-upload-label:hover {
+        background-color: rgba(40, 167, 69, 0.2);
+    }
+
+    .file-upload-label i {
+        margin-right: 8px;
+    }
+
+    .file-name {
+        margin-top: 8px;
+        font-size: 0.85rem;
+        color: var(--gray-color);
+        display: block;
+    }
+
+    .image-preview {
+        display: none;
+        max-width: 200px;
+        max-height: 200px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #ddd;
+    }
+
+    .image-preview img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    /* Error Messages */
+    .error-message {
+        color: var(--danger-color);
+        font-size: 0.85rem;
+        margin-top: 5px;
+    }
+
+    /* Submit Button */
+    .submit-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .submit-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+    }
+
+    .submit-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: 0.5s;
+    }
+
+    .submit-button:hover::before {
+        left: 100%;
+    }
+
+    .button-icon {
+        margin-left: 10px;
+        transition: var(--transition);
+    }
+
+    .submit-button:hover .button-icon {
+        transform: translateX(5px);
+    }
+
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+        .create-page-container {
+            padding: 15px;
+        }
+
+        .form-header {
+            padding: 25px 20px;
+        }
+
+        .header-icon {
+            font-size: 2.5rem;
+        }
+
+        .form-title {
+            font-size: 1.8rem;
+        }
+
+        .form-subtitle {
+            font-size: 1rem;
+        }
+
+        .page-form {
+            padding: 20px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .form-title {
+            font-size: 1.6rem;
+        }
+
+        .form-subtitle {
+            font-size: 0.9rem;
+        }
+
+        .page-form input[type="text"],
+        .page-form input[type="file"],
+        .page-form select,
+        .page-form textarea {
+            padding: 10px 12px;
+            font-size: 0.9rem;
+        }
+
+        .submit-button {
+            padding: 12px;
+            font-size: 0.9rem;
+        }
+
+        .file-upload-wrapper {
+            flex-direction: column;
+        }
+
+        .image-preview {
+            max-width: 100%;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Update file name and show preview when image is selected
+        const fileInput = document.querySelector('input[type="file"]');
+        const fileName = document.getElementById('file-name');
+        const imagePreview = document.getElementById('image-preview');
+        
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    fileName.textContent = this.files[0].name;
+                    
+                    // Show image preview
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.innerHTML = '<img src="' + e.target.result + '">';
+                        imagePreview.style.display = 'block';
+                    }
+                    reader.readAsDataURL(this.files[0]);
+                } else {
+                    fileName.textContent = 'Aucun fichier sélectionné';
+                    imagePreview.style.display = 'none';
+                    imagePreview.innerHTML = '';
+                }
+            });
+        }
+
+        // Add animation to form elements
+        const formGroups = document.querySelectorAll('.form-group');
+        formGroups.forEach((group, index) => {
+            group.style.opacity = '0';
+            group.style.transform = 'translateY(20px)';
+            group.style.transition = 'all 0.5s ease ' + (index * 0.1) + 's';
+            
+            setTimeout(() => {
+                group.style.opacity = '1';
+                group.style.transform = 'translateY(0)';
+            }, 100);
+        });
+    });
+</script>
 {% endblock %}

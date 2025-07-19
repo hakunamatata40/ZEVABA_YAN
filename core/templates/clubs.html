@@ -1,14 +1,214 @@
 {% extends 'base.html' %}
 {% block title %}Clubs{% endblock %}
+
 {% block content %}
-    <h1 class="text-2xl font-bold mb-4">Clubs</h1>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="clubs-container">
+    <div class="clubs-header">
+        <h1 class="clubs-title">Découvrez nos Clubs</h1>
+        <p class="clubs-subtitle">Rejoignez des communautés passionnantes</p>
+    </div>
+
+    <div class="clubs-grid">
         {% for club in clubs %}
-            <div class="bg-white p-4 rounded-lg shadow">
-                <h3 class="text-xl font-bold">{{ club.name }}</h3>
-                <p>{{ club.description|truncatewords:20 }}</p>
-                <a href="{% url 'club_detail' club.pk %}" class="text-zevaba-dark-blue">Voir plus</a>
+            <div class="club-card">
+                <div class="club-banner" style="background-color: {% cycle '#3a86ff' '#8338ec' '#ff006e' '#28a745' %}"></div>
+                <div class="club-content">
+                    <h3 class="club-name">{{ club.name }}</h3>
+                    <p class="club-description">{{ club.description|truncatewords:20 }}</p>
+                    <div class="club-footer">
+                        <span class="club-members">{{ club.members.count }} membres</span>
+                        <a href="{% url 'club_detail' club.pk %}" class="club-link">Voir plus</a>
+                    </div>
+                </div>
             </div>
+        {% empty %}
+            <p class="no-clubs">Aucun club disponible pour le moment.</p>
         {% endfor %}
     </div>
+</div>
+
+<style>
+    /* Base Styles */
+    :root {
+        --primary-color: #3a86ff;
+        --primary-dark: #2667cc;
+        --primary-light: #e6f0ff;
+        --secondary-color: #8338ec;
+        --accent-color: #ff006e;
+        --dark-color: #1a1a2e;
+        --light-color: #f8f9fa;
+        --gray-color: #6c757d;
+        --success-color: #28a745;
+        --danger-color: #dc3545;
+        --warning-color: #ffc107;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        --transition: all 0.3s ease;
+    }
+
+    .clubs-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header */
+    .clubs-header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .clubs-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--dark-color);
+        margin-bottom: 10px;
+        background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: textGradient 8s ease infinite;
+        background-size: 200% 200%;
+    }
+
+    @keyframes textGradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .clubs-subtitle {
+        font-size: 1.1rem;
+        color: var(--gray-color);
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    /* Clubs Grid */
+    .clubs-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 25px;
+    }
+
+    /* Club Card */
+    .club-card {
+        background-color: white;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+
+    .club-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .club-banner {
+        height: 120px;
+        width: 100%;
+    }
+
+    .club-content {
+        padding: 20px;
+    }
+
+    .club-name {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--dark-color);
+        margin-bottom: 10px;
+    }
+
+    .club-description {
+        color: var(--gray-color);
+        line-height: 1.6;
+        margin-bottom: 15px;
+    }
+
+    .club-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .club-members {
+        font-size: 0.85rem;
+        color: var(--gray-color);
+    }
+
+    .club-link {
+        color: var(--primary-color);
+        font-weight: 500;
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+    .club-link:hover {
+        text-decoration: underline;
+    }
+
+    .no-clubs {
+        text-align: center;
+        color: var(--gray-color);
+        padding: 40px;
+        grid-column: 1 / -1;
+    }
+
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+        .clubs-container {
+            padding: 15px;
+        }
+
+        .clubs-title {
+            font-size: 2rem;
+        }
+
+        .clubs-subtitle {
+            font-size: 1rem;
+        }
+
+        .clubs-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .clubs-title {
+            font-size: 1.8rem;
+        }
+
+        .club-content {
+            padding: 15px;
+        }
+
+        .club-name {
+            font-size: 1.2rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate cards on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.club-card').forEach(card => {
+            observer.observe(card);
+        });
+    });
+</script>
 {% endblock %}

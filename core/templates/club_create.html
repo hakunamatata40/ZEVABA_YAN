@@ -2,12 +2,364 @@
 {% block title %}Créer un Club{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto bg-white shadow-lg rounded-xl p-6 mt-8">
-    <h1 class="text-2xl font-bold text-blue-600 mb-4">✨ Crée ton club</h1>
-    <form method="POST" class="space-y-4">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition">Créer le club</button>
-    </form>
+<div class="create-club-container">
+    <div class="create-club-card">
+        <!-- Header with animated gradient -->
+        <div class="form-header">
+            <h1 class="form-title">✨ Crée ton club</h1>
+            <p class="form-subtitle">Rassemble une communauté autour de ta passion</p>
+        </div>
+
+        <!-- Form with improved styling -->
+        <form method="POST" class="club-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="{{ form.name.id_for_label }}" class="form-label">Nom du club</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                    <div class="error-message">{{ form.name.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <div class="error-message">{{ form.description.errors }}</div>
+                {% endif %}
+                <p class="form-hint">Décris en quelques mots l'objectif de ton club</p>
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.category.id_for_label }}" class="form-label">Catégorie</label>
+                {{ form.category }}
+                {% if form.category.errors %}
+                    <div class="error-message">{{ form.category.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.image.id_for_label }}" class="form-label">Image du club (optionnel)</label>
+                <div class="file-upload">
+                    {{ form.image }}
+                    <label for="{{ form.image.id_for_label }}" class="file-upload-label">
+                        <i class="fas fa-cloud-upload-alt"></i> Choisir un fichier
+                    </label>
+                    <span class="file-name" id="file-name">Aucun fichier sélectionné</span>
+                </div>
+                {% if form.image.errors %}
+                    <div class="error-message">{{ form.image.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-footer">
+                <button type="submit" class="submit-button">
+                    <span class="button-text">Créer le club</span>
+                    <i class="fas fa-arrow-right button-icon"></i>
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
+
+<style>
+    /* Base Styles */
+    :root {
+        --primary-color: #3a86ff;
+        --primary-dark: #2667cc;
+        --primary-light: #e6f0ff;
+        --secondary-color: #8338ec;
+        --accent-color: #ff006e;
+        --dark-color: #1a1a2e;
+        --light-color: #f8f9fa;
+        --gray-color: #6c757d;
+        --success-color: #28a745;
+        --danger-color: #dc3545;
+        --warning-color: #ffc107;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        --transition: all 0.3s ease;
+    }
+
+    .create-club-container {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 20px;
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .create-club-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .create-club-card:hover {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Form Header */
+    .form-header {
+        background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 30px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .form-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+        animation: pulse 8s infinite linear;
+    }
+
+    @keyframes pulse {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .form-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        position: relative;
+    }
+
+    .form-subtitle {
+        font-size: 1rem;
+        opacity: 0.9;
+        position: relative;
+    }
+
+    /* Form Styles */
+    .club-form {
+        padding: 30px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--dark-color);
+    }
+
+    .club-form input[type="text"],
+    .club-form input[type="file"],
+    .club-form select,
+    .club-form textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .club-form textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .club-form input[type="text"]:focus,
+    .club-form select:focus,
+    .club-form textarea:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
+    }
+
+    .form-hint {
+        font-size: 0.85rem;
+        color: var(--gray-color);
+        margin-top: 5px;
+    }
+
+    /* File Upload */
+    .file-upload {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .file-upload input[type="file"] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+
+    .file-upload-label {
+        display: inline-block;
+        padding: 12px 15px;
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: var(--transition);
+        border: 1px dashed var(--primary-color);
+    }
+
+    .file-upload-label:hover {
+        background-color: rgba(58, 134, 255, 0.2);
+    }
+
+    .file-upload-label i {
+        margin-right: 8px;
+    }
+
+    .file-name {
+        margin-top: 8px;
+        font-size: 0.85rem;
+        color: var(--gray-color);
+    }
+
+    /* Error Messages */
+    .error-message {
+        color: var(--danger-color);
+        font-size: 0.85rem;
+        margin-top: 5px;
+    }
+
+    /* Submit Button */
+    .submit-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .submit-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(58, 134, 255, 0.4);
+    }
+
+    .submit-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: 0.5s;
+    }
+
+    .submit-button:hover::before {
+        left: 100%;
+    }
+
+    .button-icon {
+        margin-left: 10px;
+        transition: var(--transition);
+    }
+
+    .submit-button:hover .button-icon {
+        transform: translateX(5px);
+    }
+
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+        .create-club-container {
+            padding: 15px;
+        }
+
+        .form-header {
+            padding: 20px;
+        }
+
+        .form-title {
+            font-size: 1.8rem;
+        }
+
+        .club-form {
+            padding: 20px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .form-title {
+            font-size: 1.5rem;
+        }
+
+        .form-subtitle {
+            font-size: 0.9rem;
+        }
+
+        .club-form input[type="text"],
+        .club-form input[type="file"],
+        .club-form select,
+        .club-form textarea {
+            padding: 10px 12px;
+            font-size: 0.9rem;
+        }
+
+        .submit-button {
+            padding: 12px;
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Update file name when file is selected
+        const fileInput = document.querySelector('input[type="file"]');
+        const fileName = document.getElementById('file-name');
+        
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    fileName.textContent = this.files[0].name;
+                } else {
+                    fileName.textContent = 'Aucun fichier sélectionné';
+                }
+            });
+        }
+
+        // Add animation to form elements
+        const formGroups = document.querySelectorAll('.form-group');
+        formGroups.forEach((group, index) => {
+            group.style.opacity = '0';
+            group.style.transform = 'translateY(20px)';
+            group.style.transition = 'all 0.5s ease ' + (index * 0.1) + 's';
+            
+            setTimeout(() => {
+                group.style.opacity = '1';
+                group.style.transform = 'translateY(0)';
+            }, 100);
+        });
+    });
+</script>
 {% endblock %}

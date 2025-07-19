@@ -2,71 +2,510 @@
 {% block title %}Profil de {{ profile_user.username }}{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto p-6 bg-white rounded-lg shadow-lg mt-6">
+<div class="profile-container">
+    <!-- Header Section -->
+    <div class="profile-header">
+        <a href="{% url 'logout' %}" class="nav-link">Déconnexion</a>
+        <div class="profile-banner"></div>
+        <div class="profile-avatar">
+            <div class="avatar-circle">
+                <span class="avatar-initials">{{ profile_user.username|first|upper }}</span>
+            </div>
+        </div>
+        
+        <div class="profile-info">
+            <h1 class="profile-username">{{ profile_user.username }}</h1>
+            <p class="profile-bio">Membre depuis {{ profile_user.date_joined|date:"F Y" }}</p>
+            
+            {% if request.user != profile_user %}
+            <form method="POST" action="{% url 'report_user' profile_user.id %}" class="report-form">
+                {% csrf_token %}
+                <input type="hidden" name="reason" value="Comportement inapproprié">
+                <button type="submit" class="report-button">
+                    <i class="fas fa-flag"></i> Signaler
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
 
-    <!-- HEADER PROFIL -->
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Profil de {{ profile_user.username }}</h1>
-        {% if request.user != profile_user %}
-        <form method="POST" action="{% url 'report_user' profile_user.id %}">
-            {% csrf_token %}
-            <input type="hidden" name="reason" value="Comportement inapproprié">
-            <button type="submit" class="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600">
-                🚩 Signaler
-            </button>
-        </form>
+    <!-- Stats Section -->
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-value">{{ followers_count }}</div>
+            <div class="stat-label">Abonnés</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ following_count }}</div>
+            <div class="stat-label">Abonnements</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ publications_count }}</div>
+            <div class="stat-label">Publications</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ clubs_created_count }}</div>
+            <div class="stat-label">Clubs créés</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ clubs_joined_count }}</div>
+            <div class="stat-label">Clubs suivis</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ profile_user.score }}</div>
+            <div class="stat-label">Score</div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        {% if request.user == profile_user %}
+            <a href="{% url 'publication_create' %}" class="action-button create-publication">
+                <i class="fas fa-plus"></i> Publication
+            </a>
+            <a href="{% url 'club_create' %}" class="action-button create-club">
+                <i class="fas fa-plus"></i> Club
+            </a>
+            <a href="{% url 'page_create' %}" class="action-button create-page">
+                <i class="fas fa-plus"></i> Page
+            </a>
+        {% else %}
+            <form method="POST" action="{% url 'follow_user' profile_user.username %}" class="follow-form">
+                {% csrf_token %}
+                <button type="submit" class="action-button {% if is_following %}unfollow{% else %}follow{% endif %}">
+                    {% if is_following %}
+                        <i class="fas fa-user-minus"></i> Se désabonner
+                    {% else %}
+                        <i class="fas fa-user-plus"></i> S'abonner
+                    {% endif %}
+                </button>
+            </form>
         {% endif %}
     </div>
 
-    <!-- STATS -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center text-gray-800">
-        <div><div class="text-xl font-bold">{{ followers_count }}</div><div class="text-sm text-gray-500">Abonnés</div></div>
-        <div><div class="text-xl font-bold">{{ following_count }}</div><div class="text-sm text-gray-500">Abonnements</div></div>
-        <div><div class="text-xl font-bold">{{ publications_count }}</div><div class="text-sm text-gray-500">Publications</div></div>
-        <div><div class="text-xl font-bold">{{ clubs_created_count }}</div><div class="text-sm text-gray-500">Clubs créés</div></div>
-        <div><div class="text-xl font-bold">{{ clubs_joined_count }}</div><div class="text-sm text-gray-500">Clubs suivis</div></div>
-        <div><div class="text-xl font-bold">{{ pages_created_count }}</div><div class="text-sm text-gray-500">Pages créées</div></div>
-        <div><div class="text-xl font-bold">{{ pages_followed_count }}</div><div class="text-sm text-gray-500">Pages suivies</div></div>
-        <div><div class="text-xl font-bold">{{ profile_user.score }}</div><div class="text-sm text-gray-500">Score</div></div>
-    </div>
-
-    <!-- ACTIONS -->
-    {% if request.user == profile_user %}
-    <div class="mt-6 flex flex-wrap gap-3">
-        <a href="{% url 'publication_create' %}" class="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-center">+ Publication</a>
-        <a href="{% url 'club_create' %}" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-center">+ Club</a>
-        <a href="{% url 'page_create' %}" class="flex-1 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-center">+ Page</a>
-    </div>
-    {% else %}
-    <div class="mt-6 flex gap-3">
-        <form method="POST" action="{% url 'follow_user' profile_user.username %}">
-            {% csrf_token %}
-            {% if is_following %}
-            <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Se désabonner</button>
-            {% else %}
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">S'abonner</button>
-            {% endif %}
-        </form>
-    </div>
-    {% endif %}
-
-    <!-- PUBLICATIONS -->
-    <h2 class="text-2xl font-semibold mt-8 mb-4 text-gray-800">Publications de {{ profile_user.username }}</h2>
-    <div class="space-y-4">
-        {% for publication in publications %}
-        <div class="bg-gray-100 p-4 rounded-lg shadow flex flex-col sm:flex-row sm:justify-between sm:items-center">
-            <div>
-                <h3 class="text-lg font-bold text-gray-800">{{ publication.type }} - {{ publication.domain }}</h3>
-                <p class="mt-2 text-gray-700">{{ publication.content }}</p>
-                <p class="text-sm text-gray-500 mt-1">Le {{ publication.created_at|date:"d M Y à H:i" }}</p>
-            </div>
-           {% if request.user == publication.user %}
-<a href="{% url 'publication_edit' publication.pk %}" class="text-blue-500 hover:underline text-sm ml-2">Modifier</a>
-{% endif %}
+    <!-- Publications Section -->
+    <div class="publications-section">
+        <h2 class="section-title">
+            <span>Publications de {{ profile_user.username }}</span>
+        </h2>
+        
+        <div class="publications-list">
+            {% for publication in publications %}
+                <div class="publication-card">
+                    <div class="publication-header">
+                        <span class="publication-type">{{ publication.type }} - {{ publication.domain }}</span>
+                        <span class="publication-date">{{ publication.created_at|date:"d M Y à H:i" }}</span>
+                    </div>
+                    <p class="publication-content">{{ publication.content|truncatewords:30 }}</p>
+                    {% if publication.content.split|length > 30 %}
+                        <button class="see-more">Voir plus</button>
+                    {% endif %}
+                    {% if request.user == publication.user %}
+                        <a href="{% url 'publication_edit' publication.pk %}" class="edit-link">
+                            <i class="fas fa-edit"></i> Modifier
+                        </a>
+                    {% endif %}
+                </div>
+            {% empty %}
+                <p class="no-publications">Aucune publication pour l'instant.</p>
+            {% endfor %}
         </div>
-        {% empty %}
-        <p class="text-gray-500">Aucune publication pour l'instant.</p>
-        {% endfor %}
     </div>
 </div>
+
+<style>
+    /* Base Styles */
+    :root {
+        --primary-color: #3a86ff;
+        --primary-dark: #2667cc;
+        --primary-light: #e6f0ff;
+        --secondary-color: #8338ec;
+        --accent-color: #ff006e;
+        --dark-color: #1a1a2e;
+        --light-color: #f8f9fa;
+        --gray-color: #6c757d;
+        --success-color: #28a745;
+        --danger-color: #dc3545;
+        --warning-color: #ffc107;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        --transition: all 0.3s ease;
+    }
+
+    .profile-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 20px 40px;
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Profile Header */
+    .profile-header {
+        position: relative;
+        margin-bottom: 80px;
+    }
+
+    .profile-banner {
+        height: 180px;
+        background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+        border-radius: 15px 15px 0 0;
+    }
+
+    .profile-avatar {
+        position: absolute;
+        bottom: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .avatar-circle {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background-color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow);
+        border: 5px solid white;
+    }
+
+    .avatar-initials {
+        font-size: 3rem;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+
+    .profile-info {
+        text-align: center;
+        margin-top: 50px;
+    }
+
+    .profile-username {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark-color);
+        margin-bottom: 5px;
+    }
+
+    .profile-bio {
+        color: var(--gray-color);
+        margin-bottom: 15px;
+    }
+
+    .report-button {
+        background-color: var(--warning-color);
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .report-button:hover {
+        background-color: #e0a800;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .stat-item {
+        background-color: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        text-align: center;
+        transition: var(--transition);
+    }
+
+    .stat-item:hover {
+        transform: translateY(-5px);
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: var(--gray-color);
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 30px;
+    }
+
+    .action-button {
+        flex: 1;
+        min-width: 120px;
+        padding: 12px 15px;
+        border-radius: 8px;
+        font-weight: 500;
+        text-align: center;
+        text-decoration: none;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .action-button i {
+        font-size: 0.9rem;
+    }
+
+    .create-publication {
+        background-color: var(--success-color);
+        color: white;
+    }
+
+    .create-publication:hover {
+        background-color: #218838;
+    }
+
+    .create-club {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .create-club:hover {
+        background-color: var(--primary-dark);
+    }
+
+    .create-page {
+        background-color: var(--secondary-color);
+        color: white;
+    }
+
+    .create-page:hover {
+        background-color: #6c2bd9;
+    }
+
+    .follow {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .follow:hover {
+        background-color: var(--primary-dark);
+    }
+
+    .unfollow {
+        background-color: var(--danger-color);
+        color: white;
+    }
+
+    .unfollow:hover {
+        background-color: #c82333;
+    }
+
+    /* Publications Section */
+    .publications-section {
+        margin-top: 30px;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--dark-color);
+        margin-bottom: 20px;
+        position: relative;
+        padding-bottom: 10px;
+    }
+
+    .section-title span {
+        position: relative;
+    }
+
+    .section-title span::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 0;
+        width: 50px;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        border-radius: 3px;
+    }
+
+    .publications-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .publication-card {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+
+    .publication-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .publication-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .publication-type {
+        font-weight: 600;
+        color: var(--primary-color);
+        font-size: 0.9rem;
+    }
+
+    .publication-date {
+        color: var(--gray-color);
+        font-size: 0.8rem;
+    }
+
+    .publication-content {
+        color: var(--dark-color);
+        line-height: 1.6;
+        margin-bottom: 10px;
+    }
+
+    .see-more {
+        background: none;
+        border: none;
+        color: var(--primary-color);
+        font-weight: 500;
+        cursor: pointer;
+        padding: 0;
+        font-size: 0.9rem;
+    }
+
+    .see-more:hover {
+        text-decoration: underline;
+    }
+
+    .edit-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--gray-color);
+        font-size: 0.85rem;
+        text-decoration: none;
+        margin-top: 10px;
+    }
+
+    .edit-link:hover {
+        color: var(--primary-color);
+    }
+
+    .no-publications {
+        text-align: center;
+        color: var(--gray-color);
+        padding: 30px;
+    }
+
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+        .profile-container {
+            padding: 0 15px 30px;
+        }
+
+        .profile-banner {
+            height: 150px;
+        }
+
+        .avatar-circle {
+            width: 100px;
+            height: 100px;
+        }
+
+        .profile-username {
+            font-size: 1.8rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .action-button {
+            width: 100%;
+        }
+
+        .publication-header {
+            flex-direction: column;
+            gap: 5px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .profile-banner {
+            height: 120px;
+        }
+
+        .avatar-circle {
+            width: 80px;
+            height: 80px;
+        }
+
+        .avatar-initials {
+            font-size: 2rem;
+        }
+
+        .profile-username {
+            font-size: 1.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle full publication content
+        document.querySelectorAll('.see-more').forEach(button => {
+            button.addEventListener('click', function() {
+                const publicationContent = this.parentElement.querySelector('.publication-content');
+                publicationContent.style.webkitLineClamp = 'unset';
+                this.style.display = 'none';
+            });
+        });
+
+        // Smooth hover effects for stats
+        document.querySelectorAll('.stat-item').forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+            });
+            item.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
 {% endblock %}

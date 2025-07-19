@@ -1,31 +1,407 @@
 {% extends 'base.html' %}
 {% block title %}Créer une Publication{% endblock %}
 {% block content %}
-    <div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
-        <h1 class="text-2xl font-bold text-zevaba-dark-blue mb-4">Créer une Publication</h1>
-        <form method="post" enctype="multipart/form-data">
+<div class="create-publication-container">
+    <div class="create-publication-card">
+        <div class="create-publication-header">
+            <h1 class="create-publication-title">Créer une Publication</h1>
+            <div class="create-publication-illustration">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#3A86FF" d="M45.1,-65.2C58.6,-56.4,70.1,-44.5,75.9,-30C81.6,-15.5,81.6,1.6,76.1,15.4C70.6,29.2,59.6,39.7,46.4,50.1C33.2,60.5,17.6,70.7,1.9,68.3C-13.8,65.9,-27.6,50.8,-41.3,38.1C-55,25.4,-68.6,15.1,-73.5,0.8C-78.4,-13.5,-74.6,-31.8,-63.1,-45.5C-51.6,-59.2,-32.4,-68.3,-14.5,-74.1C3.4,-80,6.8,-82.6,20.5,-77.9C34.2,-73.2,58.2,-61.1,68.3,-45.2C78.4,-29.3,74.6,-9.6,70.1,9.5C65.6,28.6,60.4,47.1,49.1,59.2C37.8,71.3,20.4,77,3.7,71.9C-13,66.8,-26,50.8,-36.5,37.3C-47,23.7,-55,12.9,-58.5,-0.9C-62.1,-14.7,-61.2,-29.4,-53.2,-40.6C-45.2,-51.8,-30.1,-59.5,-14.3,-65.8C1.5,-72.1,3,-77,15.2,-74.5C27.4,-72.1,49.3,-62.3,58.4,-48.9C67.5,-35.5,63.8,-18.5,63.5,-1.9C63.3,14.7,66.5,29.4,60.4,40.6C54.3,51.8,38.9,59.5,23.7,66.8C8.5,74.1,-6.5,81,-16.1,76.4C-25.7,71.8,-29.9,55.7,-40.5,42.4C-51.1,29.1,-68.1,18.6,-75.1,3.6C-82.1,-11.4,-79.1,-30.8,-68.5,-45.1C-57.9,-59.4,-39.7,-68.6,-22.5,-75.1C-5.3,-81.6,11,-85.4,25.1,-79.9C39.2,-74.4,50.7,-59.6,58.2,-43.8C65.7,-28,69.2,-11.2,68.9,5.4C68.6,22,64.5,44.1,54.1,58.2C43.7,72.4,26.9,78.6,8.9,84.8C-9.1,91,-18.2,97.2,-25.9,92.8C-33.6,88.4,-39.9,73.4,-49.4,59.4C-58.9,45.4,-71.6,32.4,-77.6,16.2C-83.6,0,-82.9,-19.4,-74.5,-34.5C-66.1,-49.6,-50,-60.4,-34.1,-68.5C-18.2,-76.6,-2.5,-82,12.3,-80.6C27.1,-79.2,54.1,-71,63.5,-56.4C72.9,-41.9,64.6,-20.9,62.6,-1.4C60.6,18.1,64.8,36.2,58.5,50.2C52.2,64.2,35.3,74.1,17.1,81.6C-1.1,89.1,-20.6,94.2,-32.9,86.1C-45.2,78,-50.3,56.7,-58.9,39.1C-67.5,21.5,-79.6,7.5,-81.9,-8.2C-84.2,-23.9,-76.7,-47.8,-62.5,-61.8C-48.3,-75.8,-27.4,-79.9,-7.5,-79.3C12.4,-78.7,24.8,-73.4,36.9,-65.6C49,-57.8,60.8,-47.5,68.3,-35.2C75.8,-22.8,79,-8.4,77.3,5.4C75.6,19.2,69,38.4,57.8,52.4C46.6,66.4,30.8,75.2,13.7,82.5C-3.4,89.8,-21.8,95.6,-34.6,88.4C-47.4,81.2,-54.6,61,-63.7,43.2C-72.8,25.4,-83.8,10,-84.4,-6.5C-85,-23,-75.2,-46.1,-61.1,-61.6C-47,-77.2,-28.5,-85.3,-9.5,-86.8C9.5,-88.3,19,-83.2,31.6,-74Z" transform="translate(100 100)" />
+                </svg>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="create-publication-form">
             {% csrf_token %}
-            <div class="mb-4">
-                <label for="{{ form.content.id_for_label }}" class="block text-sm font-medium text-gray-700">Contenu</label>
+            
+            <div class="form-group">
+                <label for="{{ form.content.id_for_label }}" class="form-label">Contenu</label>
                 {{ form.content }}
+                <div class="form-underline"></div>
             </div>
-            <div class="mb-4">
-                <label for="{{ form.type.id_for_label }}" class="block text-sm font-medium text-gray-700">Type</label>
-                {{ form.type }}
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="{{ form.type.id_for_label }}" class="form-label">Type</label>
+                    {{ form.type }}
+                    <div class="form-underline"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.domain.id_for_label }}" class="form-label">Domaine</label>
+                    {{ form.domain }}
+                    <div class="form-underline"></div>
+                </div>
             </div>
-            <div class="mb-4">
-                <label for="{{ form.domain.id_for_label }}" class="block text-sm font-medium text-gray-700">Domaine</label>
-                {{ form.domain }}
-            </div>
-            <div class="mb-4">
-                <label for="{{ form.club.id_for_label }}" class="block text-sm font-medium text-gray-700">Club (optionnel)</label>
+
+            <div class="form-group">
+                <label for="{{ form.club.id_for_label }}" class="form-label">Club (optionnel)</label>
                 {{ form.club }}
+                <div class="form-underline"></div>
             </div>
-            <div class="mb-4">
-                <label for="{{ form.media.id_for_label }}" class="block text-sm font-medium text-gray-700">Média (image, vidéo, PDF)</label>
-                {{ form.media }}
+
+            <div class="form-group file-upload">
+                <label for="{{ form.media.id_for_label }}" class="form-label">Média (image, vidéo, PDF)</label>
+                <div class="file-upload-container">
+                    <label class="file-upload-label">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span class="file-upload-text">Glissez-déposez ou cliquez pour sélectionner</span>
+                        {{ form.media }}
+                        <span class="file-name" id="file-name">Aucun fichier sélectionné</span>
+                    </label>
+                </div>
             </div>
-            <button type="submit" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded w-full hover:bg-zevaba-dark-blue/80 transition-colors">Publier</button>
+
+            <button type="submit" class="submit-button">
+                <span>Publier</span>
+                <i class="fas fa-paper-plane"></i>
+            </button>
         </form>
     </div>
+</div>
+
+<style>
+    /* Base Styles */
+    :root {
+        --primary-color: #3a86ff;
+        --primary-dark: #2667cc;
+        --primary-light: #e6f0ff;
+        --secondary-color: #8338ec;
+        --accent-color: #ff006e;
+        --dark-color: #1a1a2e;
+        --light-color: #f8f9fa;
+        --gray-color: #6c757d;
+        --success-color: #28a745;
+        --danger-color: #dc3545;
+        --warning-color: #ffc107;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        --transition: all 0.3s ease;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        background-color: #f5f7ff;
+        color: var(--dark-color);
+        line-height: 1.6;
+    }
+
+    /* Main Container */
+    .create-publication-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Card */
+    .create-publication-card {
+        background: white;
+        border-radius: 20px;
+        width: 100%;
+        max-width: 600px;
+        padding: 30px;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .create-publication-card:hover {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        transform: translateY(-5px);
+    }
+
+    .create-publication-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
+    }
+
+    /* Header */
+    .create-publication-header {
+        text-align: center;
+        margin-bottom: 30px;
+        position: relative;
+    }
+
+    .create-publication-title {
+        font-size: 2rem;
+        color: var(--dark-color);
+        margin-bottom: 15px;
+        background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        display: inline-block;
+    }
+
+    .create-publication-illustration {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto;
+        opacity: 0.1;
+        position: absolute;
+        top: -30px;
+        right: -30px;
+        z-index: 0;
+    }
+
+    /* Form */
+    .create-publication-form {
+        position: relative;
+        z-index: 1;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+        position: relative;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 15px;
+    }
+
+    .form-row .form-group {
+        flex: 1;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--dark-color);
+        font-size: 0.95rem;
+    }
+
+    textarea, select, input[type="text"], input[type="file"] {
+        width: 100%;
+        padding: 12px 0;
+        border: none;
+        border-bottom: 1px solid #ddd;
+        font-size: 1rem;
+        background: transparent;
+        transition: var(--transition);
+    }
+
+    textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    textarea:focus, select:focus, input[type="text"]:focus {
+        outline: none;
+        border-bottom-color: var(--primary-color);
+    }
+
+    .form-underline {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        transition: var(--transition);
+    }
+
+    textarea:focus ~ .form-underline,
+    select:focus ~ .form-underline,
+    input[type="text"]:focus ~ .form-underline {
+        width: 100%;
+    }
+
+    /* File Upload */
+    .file-upload-container {
+        margin-top: 10px;
+    }
+
+    .file-upload-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+        border: 2px dashed #ddd;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: var(--transition);
+        text-align: center;
+    }
+
+    .file-upload-label:hover {
+        border-color: var(--primary-color);
+        background-color: rgba(58, 134, 255, 0.05);
+    }
+
+    .file-upload-label i {
+        font-size: 2rem;
+        color: var(--primary-color);
+        margin-bottom: 10px;
+    }
+
+    .file-upload-text {
+        color: var(--gray-color);
+        margin-bottom: 5px;
+    }
+
+    .file-name {
+        font-size: 0.9rem;
+        color: var(--dark-color);
+        margin-top: 10px;
+        font-weight: 500;
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+
+    /* Submit Button */
+    .submit-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        margin-top: 20px;
+    }
+
+    .submit-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(58, 134, 255, 0.4);
+    }
+
+    .submit-button i {
+        transition: var(--transition);
+    }
+
+    .submit-button:hover i {
+        transform: translateX(5px);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .create-publication-card {
+            padding: 25px;
+        }
+
+        .create-publication-title {
+            font-size: 1.8rem;
+        }
+
+        .form-row {
+            flex-direction: column;
+            gap: 25px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .create-publication-container {
+            padding: 15px;
+        }
+
+        .create-publication-card {
+            padding: 20px;
+        }
+
+        .create-publication-title {
+            font-size: 1.6rem;
+        }
+
+        .file-upload-label {
+            padding: 20px;
+        }
+
+        .submit-button {
+            padding: 12px;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // File upload display
+    const fileInput = document.querySelector('input[type="file"]');
+    const fileNameDisplay = document.getElementById('file-name');
+
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            fileNameDisplay.textContent = this.files[0].name;
+        } else {
+            fileNameDisplay.textContent = 'Aucun fichier sélectionné';
+        }
+    });
+
+    // Form validation
+    const form = document.querySelector('.create-publication-form');
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        const requiredFields = form.querySelectorAll('[required]');
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                const formGroup = field.closest('.form-group');
+                formGroup.classList.add('error');
+                
+                setTimeout(() => {
+                    formGroup.classList.remove('error');
+                }, 2000);
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            // Add shake animation to form
+            form.classList.add('shake');
+            setTimeout(() => {
+                form.classList.remove('shake');
+            }, 500);
+        }
+    });
+
+    // Add animation to form groups when focused
+    const formGroups = document.querySelectorAll('.form-group');
+    formGroups.forEach(group => {
+        const input = group.querySelector('input, textarea, select');
+        if (input) {
+            input.addEventListener('focus', function() {
+                group.classList.add('focused');
+            });
+            
+            input.addEventListener('blur', function() {
+                if (!this.value) {
+                    group.classList.remove('focused');
+                }
+            });
+        }
+    });
+});
+</script>
 {% endblock %}

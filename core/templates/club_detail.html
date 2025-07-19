@@ -1,268 +1,1054 @@
 {% extends 'base.html' %}
 {% block title %}{{ club.name }}{% endblock %}
+
 {% block content %}
-    <div class="container mx-auto p-4">
-        <!-- Club Header -->
-        <h1 class="text-2xl font-bold mb-4 text-zevaba-dark-blue">{{ club.name }}</h1>
-        <p class="text-gray-800 mb-6">{{ club.description }}</p>
-        
-        <!-- Search Bar -->
-        <div class="mb-6">
-            <form method="GET" action="{% url 'search' %}" class="flex items-center space-x-2">
-                <input type="text" name="query" placeholder="Rechercher utilisateurs ou clubs..." class="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue">
-                <button type="submit" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded-lg hover:bg-zevaba-dark-blue/80 transition-colors">Rechercher</button>
+<div class="club-detail-container">
+    <!-- Club Header Section -->
+    <div class="club-header">
+        <div class="club-banner" style="background: linear-gradient(135deg, #3a86ff, #8338ec);"></div>
+        <div class="club-info">
+            <h1 class="club-name">{{ club.name }}</h1>
+            <p class="club-description">{{ club.description }}</p>
+            <div class="club-meta">
+                <span class="members-count"><i class="fas fa-users"></i> {{ club.members.count }} membres</span>
+                <span class="created-date"><i class="far fa-calendar-alt"></i> Créé le {{ club.created_at|date:"d/m/Y" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Club Actions -->
+    <div class="club-actions">
+        <div class="search-container">
+            <form method="GET" action="{% url 'search' %}" class="search-form">
+                <input type="text" name="query" placeholder="Rechercher dans le club..." class="search-input">
+                <button type="submit" class="search-button">
+                    <i class="fas fa-search"></i>
+                </button>
             </form>
         </div>
 
-        <!-- Club Actions -->
-        <div class="flex items-center space-x-4 mb-6">
-            <a href="{% url 'publication_create' %}?club={{ club.pk }}" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded hover:bg-zevaba-dark-blue/80 transition-colors">Créer une publication</a>
+        <div class="action-buttons">
+            <a href="{% url 'publication_create' %}?club={{ club.pk }}" class="action-button create-post">
+                <i class="fas fa-plus"></i> Nouvelle publication
+            </a>
+
             {% if user.is_authenticated %}
                 {% if user in club.members.all %}
-                    <form method="POST" action="{% url 'club_unsubscribe' club.pk %}" class="inline">
+                    <form method="POST" action="{% url 'club_unsubscribe' club.pk %}" class="action-form">
                         {% csrf_token %}
-                        <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors">Se désabonner</button>
+                        <button type="submit" class="action-button unsubscribe">
+                            <i class="fas fa-user-minus"></i> Quitter
+                        </button>
                     </form>
                 {% else %}
-                    <form method="POST" action="{% url 'club_subscribe' club.pk %}" class="inline">
+                    <form method="POST" action="{% url 'club_subscribe' club.pk %}" class="action-form">
                         {% csrf_token %}
-                        <button type="submit" class="bg-zevaba-light-blue text-white px-4 py-2 rounded hover:bg-zevaba-light-blue/80 transition-colors">S'abonner</button>
+                        <button type="submit" class="action-button subscribe">
+                            <i class="fas fa-user-plus"></i> Rejoindre
+                        </button>
                     </form>
                 {% endif %}
-                <a href="{% url 'club_messages' club.pk %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue transition-colors">Messagerie du club</a>
+
+                <a href="{% url 'club_messages' club.pk %}" class="action-button message">
+                    <i class="fas fa-envelope"></i> Messagerie
+                </a>
+
                 {% if user == club.creator or user in club.admins.all %}
-                    <a href="{% url 'club_manage_admins' club.pk %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue transition-colors">Gérer les admins</a>
+                    <a href="{% url 'club_manage_admins' club.pk %}" class="action-button manage">
+                        <i class="fas fa-user-cog"></i> Gérer
+                    </a>
                 {% endif %}
             {% endif %}
         </div>
+    </div>
 
-        <!-- Publications -->
-        <div class="space-y-6">
-            {% for publication in publications %}
-                <div class="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-                    <h3 class="text-xl font-bold text-zevaba-dark-blue mb-2">
-                        <a href="{% url 'profile' publication.user.username %}" class="hover:underline">{{ publication.type }} - {{ publication.domain }}</a>
-                    </h3>
-                    <p class="text-gray-800 mb-4">{{ publication.content }}</p>
+    <!-- Publications Section -->
+    <div class="publications-section">
+        <h2 class="section-title">Publications du club</h2>
+        
+        {% for publication in publications %}
+            <div class="publication-card">
+                <div class="publication-header">
+                    <div class="author-info">
+                        <a href="{% url 'profile' publication.user.username %}" class="author-avatar">
+                            <span>{{ publication.user.username|first|upper }}</span>
+                        </a>
+                        <div class="author-details">
+                            <a href="{% url 'profile' publication.user.username %}" class="author-name">{{ publication.user.username }}</a>
+                            <span class="publication-date">{{ publication.created_at|date:"d M Y à H:i" }}</span>
+                        </div>
+                    </div>
+                    {% if user.is_authenticated %}
+                        <form method="POST" action="{% url 'report_user' publication.user.pk %}" class="report-form" data-user-id="{{ publication.user.pk }}">
+                            {% csrf_token %}
+                            <button type="submit" class="report-button" title="Signaler">
+                                <i class="fas fa-flag"></i>
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+
+                <div class="publication-content">
+                    <h3 class="publication-title">{{ publication.type }} - {{ publication.domain }}</h3>
+                    <p class="publication-text">{{ publication.content }}</p>
+                    
                     {% if publication.media %}
-                        <div class="mb-4">
+                        <div class="publication-media">
                             {% if publication.media.name|lower|slice:"-4:" == '.pdf' %}
-                                <a href="{{ publication.media.url }}" class="text-zevaba-light-blue hover:underline" target="_blank">Voir le PDF</a>
+                                <a href="{{ publication.media.url }}" class="media-link pdf" target="_blank">
+                                    <i class="fas fa-file-pdf"></i> Voir le document PDF
+                                </a>
                             {% elif publication.media.name|lower|slice:"-4:" in '.jpg,.jpeg,.png,.gif' %}
-                                <img src="{{ publication.media.url }}" alt="Publication media" class="max-w-full h-auto rounded-lg">
+                                <img src="{{ publication.media.url }}" alt="Publication media" class="media-image">
                             {% elif publication.media.name|lower|slice:"-4:" in '.mp4,.mov,.avi' %}
-                                <video controls class="max-w-full h-auto rounded-lg">
+                                <video controls class="media-video">
                                     <source src="{{ publication.media.url }}" type="video/{{ publication.media.name|lower|slice:-3 }}">
                                     Votre navigateur ne supporte pas la vidéo.
                                 </video>
                             {% endif %}
                         </div>
                     {% endif %}
-                    <p class="text-sm text-gray-500 mb-4">
-                        Par <a href="{% url 'profile' publication.user.username %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue">{{ publication.user.username }}</a> le {{ publication.created_at|date:"d/m/Y H:i" }}
-                        {% if user.is_authenticated %}
-                            <form method="POST" action="{% url 'report_user' publication.user.pk %}" class="inline report-form" data-user-id="{{ publication.user.pk }}">
-                                {% csrf_token %}
-                                <button type="submit" class="text-red-500 hover:text-red-600 text-sm ml-2">Signaler</button>
-                            </form>
-                        {% endif %}
-                    </p>
-                    <div class="flex items-center space-x-4 mb-4">
-                        <div class="flex items-center space-x-2">
-                            <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="like-form" data-publication-id="{{ publication.pk }}" data-action="like">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="like">
-                                <button type="submit" class="flex items-center space-x-1 text-zevaba-dark-blue hover:text-zevaba-light-blue transition-colors">
-                                    <i class="fa {% if request.user in publication.liked_by.all %}fa-solid fa-thumbs-up text-zevaba-light-blue{% else %}fa-regular fa-thumbs-up{% endif %}"></i>
-                                    <span class="like-count">{{ publication.likes }}</span>
-                                </button>
-                            </form>
-                            <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="dislike-form" data-publication-id="{{ publication.pk }}" data-action="dislike">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="dislike">
-                                <button type="submit" class="flex items-center space-x-1 text-zevaba-dark-blue hover:text-zevaba-light-blue transition-colors">
-                                    <i class="fa {% if request.user in publication.disliked_by.all %}fa-solid fa-thumbs-down text-zevaba-light-blue{% else %}fa-regular fa-thumbs-down{% endif %}"></i>
-                                    <span class="dislike-count">{{ publication.dislikes }}</span>
-                                </button>
-                            </form>
-                        </div>
+                </div>
+
+                <!-- Reactions -->
+                <div class="publication-actions">
+                    <div class="reaction-buttons">
+                        <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="like-form" data-publication-id="{{ publication.pk }}" data-action="like">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="like">
+                            <button type="submit" class="reaction-button like {% if request.user in publication.liked_by.all %}active{% endif %}">
+                                <i class="fas fa-thumbs-up"></i>
+                                <span class="count">{{ publication.likes }}</span>
+                            </button>
+                        </form>
+
+                        <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="dislike-form" data-publication-id="{{ publication.pk }}" data-action="dislike">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="dislike">
+                            <button type="submit" class="reaction-button dislike {% if request.user in publication.disliked_by.all %}active{% endif %}">
+                                <i class="fas fa-thumbs-down"></i>
+                                <span class="count">{{ publication.dislikes }}</span>
+                            </button>
+                        </form>
                     </div>
-                    {% if user.is_authenticated %}
-                        <div class="reaction-section">
-                            <form method="POST" action="{% url 'react' publication.pk %}" class="reaction-form flex flex-col space-y-2" data-publication-id="{{ publication.pk }}">
-                                {% csrf_token %}
-                                <div class="flex flex-wrap gap-2 mb-2">
-                                    {% for reaction_type, reaction_label in reaction_choices %}
-                                        <label class="flex items-center">
-                                            <input type="radio" name="type" value="{{ reaction_type }}" class="hidden peer" required>
-                                            <span class="bg-zevaba-light-blue text-white px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-zevaba-dark-blue transition-colors peer-checked:bg-zevaba-dark-blue">{{ reaction_label }}</span>
-                                        </label>
-                                    {% endfor %}
+
+                    <button class="comment-toggle" data-publication-id="{{ publication.pk }}">
+                        <i class="fas fa-comment"></i> Commenter
+                    </button>
+                </div>
+
+                <!-- Comment Form (Initially Hidden) -->
+                {% if user.is_authenticated %}
+                    <div class="comment-form-container" id="comment-form-{{ publication.pk }}" style="display: none;">
+                        <form method="POST" action="{% url 'react' publication.pk %}" class="comment-form" data-publication-id="{{ publication.pk }}">
+                            {% csrf_token %}
+                            <div class="reaction-types">
+                                {% for reaction_type, reaction_label in reaction_choices %}
+                                    <label class="reaction-option">
+                                        <input type="radio" name="type" value="{{ reaction_type }}" class="reaction-input" required>
+                                        <span class="reaction-label">{{ reaction_label }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                            <div class="comment-input-group">
+                                <input type="text" name="comment" placeholder="Ajouter un commentaire..." class="comment-input" required>
+                                <button type="submit" class="comment-submit">Envoyer</button>
+                            </div>
+                            <p class="error-message"></p>
+                        </form>
+                    </div>
+                {% endif %}
+
+                <!-- Comments Section -->
+                <div class="comments-section">
+                    <h4 class="comments-title">Commentaires</h4>
+                    
+                    <div class="comments-list" data-publication-id="{{ publication.pk }}">
+                        {% for reaction in publication.reaction_set.all %}
+                            <div class="comment-item">
+                                <div class="comment-header">
+                                    <a href="{% url 'profile' reaction.user.username %}" class="comment-author">
+                                        {{ reaction.user.username }}
+                                    </a>
+                                    <span class="comment-reaction">{{ reaction.get_type_display }}</span>
+                                    <span class="comment-date">{{ reaction.created_at|date:"d/m/Y H:i" }}</span>
                                 </div>
-                                <div class="flex items-center space-x-2">
-                                    <input type="text" name="comment" placeholder="Ajouter un commentaire..." class="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue" required>
-                                    <button type="submit" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded-lg hover:bg-zevaba-dark-blue/80 transition-colors">Envoyer</button>
-                                </div>
-                                <p class="text-red-500 text-sm hidden error-message">Veuillez sélectionner un type de réaction et entrer un commentaire.</p>
-                            </form>
-                            <a href="{% url 'send_message' publication.user.pk %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue text-sm mt-2 inline-block">Envoyer un message privé</a>
-                        </div>
-                    {% else %}
-                        <p class="text-sm text-gray-500 mb-4">Connectez-vous pour réagir à cette publication ou envoyer un message.</p>
-                    {% endif %}
-                    <div class="comments-section">
-                        <h4 class="text-sm font-semibold text-zevaba-dark-blue mb-2">Commentaires</h4>
-                        <div class="comments-list space-y-2" data-publication-id="{{ publication.pk }}">
-                            {% for reaction in publication.reaction_set.all %}
-                                <div class="bg-gray-100 p-3 rounded-lg">
-                                    <p class="text-sm font-medium text-gray-800">
-                                        <a href="{% url 'profile' reaction.user.username %}" class="hover:underline">{{ reaction.user.username }}</a> ({{ reaction.get_type_display }})
-                                        {% if user.is_authenticated %}
-                                            <form method="POST" action="{% url 'report_user' reaction.user.pk %}" class="inline report-form" data-user-id="{{ reaction.user.pk }}">
-                                                {% csrf_token %}
-                                                <button type="submit" class="text-red-500 hover:text-red-600 text-sm ml-2">Signaler</button>
-                                            </form>
-                                        {% endif %}
-                                    </p>
-                                    <p class="text-sm text-gray-600">{{ reaction.comment }}</p>
-                                    <p class="text-xs text-gray-500">{{ reaction.created_at|date:"d/m/Y H:i" }}</p>
-                                </div>
-                            {% endfor %}
-                            {% if not publication.reaction_set.exists %}
-                                <p class="text-sm text-gray-500">Aucun commentaire pour le moment.</p>
-                            {% endif %}
-                        </div>
+                                <p class="comment-text">{{ reaction.comment }}</p>
+                                
+                                {% if user.is_authenticated %}
+                                    <form method="POST" action="{% url 'report_user' reaction.user.pk %}" class="report-form" data-user-id="{{ reaction.user.pk }}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="report-comment" title="Signaler">
+                                            <i class="fas fa-flag"></i> Signaler
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        {% empty %}
+                            <p class="no-comments">Aucun commentaire pour le moment.</p>
+                        {% endfor %}
                     </div>
                 </div>
-            {% endfor %}
-        </div>
+            </div>
+        {% empty %}
+            <div class="empty-publications">
+                <i class="far fa-newspaper"></i>
+                <p>Aucune publication dans ce club pour le moment.</p>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'publication_create' %}?club={{ club.pk }}" class="create-first-post">
+                        Créer la première publication
+                    </a>
+                {% endif %}
+            </div>
+        {% endfor %}
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Handle reaction form submissions
-            const reactionForms = document.querySelectorAll('.reaction-form');
-            reactionForms.forEach(form => {
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    const formData = new FormData(form);
-                    const publicationId = form.getAttribute('data-publication-id');
-                    const actionUrl = form.getAttribute('action');
-                    const commentInput = form.querySelector('input[name="comment"]');
-                    const reactionType = form.querySelector('input[name="type"]:checked');
-                    const errorMessage = form.querySelector('.error-message');
+</div>
 
-                    if (!reactionType || !commentInput.value.trim()) {
-                        errorMessage.classList.remove('hidden');
-                        return;
+<style>
+    /* Base Styles */
+    :root {
+        --primary-color: #3a86ff;
+        --primary-dark: #2667cc;
+        --primary-light: #e6f0ff;
+        --secondary-color: #8338ec;
+        --accent-color: #ff006e;
+        --success-color: #28a745;
+        --danger-color: #dc3545;
+        --warning-color: #ffc107;
+        --dark-color: #1a1a2e;
+        --gray-color: #6c757d;
+        --light-gray: #f8f9fa;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        --transition: all 0.3s ease;
+    }
+
+    .club-detail-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 20px 40px;
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Club Header */
+    .club-header {
+        position: relative;
+        margin-bottom: 30px;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+    }
+
+    .club-banner {
+        height: 180px;
+        width: 100%;
+    }
+
+    .club-info {
+        padding: 20px;
+        background: white;
+    }
+
+    .club-name {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark-color);
+        margin-bottom: 10px;
+    }
+
+    .club-description {
+        color: var(--dark-color);
+        line-height: 1.6;
+        margin-bottom: 15px;
+    }
+
+    .club-meta {
+        display: flex;
+        gap: 20px;
+        font-size: 0.9rem;
+        color: var(--gray-color);
+    }
+
+    .club-meta i {
+        margin-right: 5px;
+    }
+
+    /* Search and Actions */
+    .club-actions {
+        margin-bottom: 30px;
+    }
+
+    .search-container {
+        margin-bottom: 20px;
+    }
+
+    .search-form {
+        display: flex;
+        position: relative;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 12px 15px;
+        padding-right: 45px;
+        border: 1px solid #ddd;
+        border-radius: 30px;
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.2);
+    }
+
+    .search-button {
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        width: 45px;
+        background: none;
+        border: none;
+        color: var(--gray-color);
+        cursor: pointer;
+        border-radius: 0 30px 30px 0;
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .action-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 15px;
+        border-radius: 30px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+    .action-button i {
+        font-size: 0.9rem;
+    }
+
+    .create-post {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .create-post:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .subscribe {
+        background-color: var(--success-color);
+        color: white;
+        border: none;
+    }
+
+    .subscribe:hover {
+        background-color: #218838;
+        transform: translateY(-2px);
+    }
+
+    .unsubscribe {
+        background-color: var(--danger-color);
+        color: white;
+    }
+
+    .unsubscribe:hover {
+        background-color: #c82333;
+        transform: translateY(-2px);
+    }
+
+    .message {
+        background-color: var(--secondary-color);
+        color: white;
+    }
+
+    .message:hover {
+        background-color: #6c2bd9;
+        transform: translateY(-2px);
+    }
+
+    .manage {
+        background-color: var(--warning-color);
+        color: var(--dark-color);
+    }
+
+    .manage:hover {
+        background-color: #e0a800;
+        transform: translateY(-2px);
+    }
+
+    /* Publications Section */
+    .publications-section {
+        margin-top: 30px;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--dark-color);
+        margin-bottom: 20px;
+        position: relative;
+        padding-bottom: 10px;
+    }
+
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 50px;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        border-radius: 3px;
+    }
+
+    .publication-card {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 25px;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+
+    .publication-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Publication Header */
+    .publication-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+    }
+
+    .author-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .author-avatar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .author-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .author-name {
+        font-weight: 600;
+        color: var(--dark-color);
+        text-decoration: none;
+    }
+
+    .author-name:hover {
+        text-decoration: underline;
+    }
+
+    .publication-date {
+        font-size: 0.8rem;
+        color: var(--gray-color);
+    }
+
+    .report-button {
+        background: none;
+        border: none;
+        color: var(--gray-color);
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .report-button:hover {
+        color: var(--danger-color);
+    }
+
+    /* Publication Content */
+    .publication-content {
+        margin-bottom: 15px;
+    }
+
+    .publication-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--dark-color);
+        margin-bottom: 10px;
+    }
+
+    .publication-text {
+        color: var(--dark-color);
+        line-height: 1.6;
+        margin-bottom: 15px;
+    }
+
+    /* Publication Media */
+    .publication-media {
+        margin: 15px 0;
+    }
+
+    .media-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 15px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .media-link.pdf {
+        background-color: var(--danger-color);
+        color: white;
+    }
+
+    .media-link.pdf:hover {
+        background-color: #c82333;
+    }
+
+    .media-image {
+        max-width: 100%;
+        max-height: 400px;
+        border-radius: 8px;
+        display: block;
+    }
+
+    .media-video {
+        max-width: 100%;
+        max-height: 400px;
+        border-radius: 8px;
+        display: block;
+    }
+
+    /* Publication Actions */
+    .publication-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        margin: 15px 0;
+    }
+
+    .reaction-buttons {
+        display: flex;
+        gap: 10px;
+    }
+
+    .reaction-button {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 8px 12px;
+        border-radius: 20px;
+        background: none;
+        border: 1px solid #ddd;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .reaction-button.like.active {
+        background-color: var(--primary-light);
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+
+    .reaction-button.dislike.active {
+        background-color: #f8d7da;
+        border-color: var(--danger-color);
+        color: var(--danger-color);
+    }
+
+    .reaction-button:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .comment-toggle {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 8px 12px;
+        border-radius: 20px;
+        background: none;
+        border: 1px solid #ddd;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .comment-toggle:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    /* Comment Form */
+    .comment-form-container {
+        margin: 15px 0;
+    }
+
+    .reaction-types {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .reaction-option {
+        position: relative;
+    }
+
+    .reaction-input {
+        position: absolute;
+        opacity: 0;
+    }
+
+    .reaction-label {
+        display: inline-block;
+        padding: 5px 12px;
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .reaction-input:checked + .reaction-label {
+        background-color: var(--primary-color);
+        color: white;
+    }
+
+    .comment-input-group {
+        display: flex;
+        margin-bottom: 5px;
+    }
+
+    .comment-input {
+        flex: 1;
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        border-radius: 20px 0 0 20px;
+        font-size: 0.9rem;
+        transition: var(--transition);
+    }
+
+    .comment-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+
+    .comment-submit {
+        padding: 10px 15px;
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 0 20px 20px 0;
+        cursor: pointer;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .comment-submit:hover {
+        background-color: var(--primary-dark);
+    }
+
+    .error-message {
+        color: var(--danger-color);
+        font-size: 0.8rem;
+        margin-top: 5px;
+        display: none;
+    }
+
+    /* Comments Section */
+    .comments-section {
+        margin-top: 20px;
+    }
+
+    .comments-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--dark-color);
+        margin-bottom: 10px;
+    }
+
+    .comments-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .comment-item {
+        background-color: var(--light-gray);
+        padding: 15px;
+        border-radius: 8px;
+    }
+
+    .comment-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+    }
+
+    .comment-author {
+        font-weight: 600;
+        color: var(--dark-color);
+        text-decoration: none;
+    }
+
+    .comment-author:hover {
+        text-decoration: underline;
+    }
+
+    .comment-reaction {
+        padding: 2px 8px;
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+        border-radius: 10px;
+        font-size: 0.75rem;
+    }
+
+    .comment-date {
+        color: var(--gray-color);
+        font-size: 0.75rem;
+    }
+
+    .comment-text {
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin-bottom: 10px;
+    }
+
+    .report-comment {
+        background: none;
+        border: none;
+        color: var(--gray-color);
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: var(--transition);
+    }
+
+    .report-comment:hover {
+        color: var(--danger-color);
+    }
+
+    .no-comments {
+        text-align: center;
+        color: var(--gray-color);
+        font-size: 0.9rem;
+        padding: 15px;
+    }
+
+    /* Empty Publications */
+    .empty-publications {
+        text-align: center;
+        padding: 40px 20px;
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: var(--shadow);
+    }
+
+    .empty-publications i {
+        font-size: 2.5rem;
+        color: var(--gray-color);
+        margin-bottom: 15px;
+    }
+
+    .empty-publications p {
+        color: var(--gray-color);
+        margin-bottom: 15px;
+    }
+
+    .create-first-post {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: 30px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .create-first-post:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+        .club-detail-container {
+            padding: 0 15px 30px;
+        }
+
+        .club-banner {
+            height: 150px;
+        }
+
+        .club-name {
+            font-size: 1.8rem;
+        }
+
+        .club-meta {
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .action-button {
+            justify-content: center;
+        }
+
+        .publication-header {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .publication-actions {
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .reaction-buttons {
+            width: 100%;
+            justify-content: space-between;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .club-banner {
+            height: 120px;
+        }
+
+        .club-name {
+            font-size: 1.5rem;
+        }
+
+        .club-description {
+            font-size: 0.95rem;
+        }
+
+        .publication-title {
+            font-size: 1.1rem;
+        }
+
+        .publication-text {
+            font-size: 0.95rem;
+        }
+
+        .comment-input-group {
+            flex-direction: column;
+        }
+
+        .comment-input {
+            border-radius: 20px;
+            margin-bottom: 5px;
+        }
+
+        .comment-submit {
+            border-radius: 20px;
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle comment form
+        document.querySelectorAll('.comment-toggle').forEach(button => {
+            button.addEventListener('click', function() {
+                const publicationId = this.getAttribute('data-publication-id');
+                const commentForm = document.getElementById(`comment-form-${publicationId}`);
+                
+                if (commentForm.style.display === 'none') {
+                    commentForm.style.display = 'block';
+                    this.innerHTML = '<i class="fas fa-comment-slash"></i> Fermer';
+                } else {
+                    commentForm.style.display = 'none';
+                    this.innerHTML = '<i class="fas fa-comment"></i> Commenter';
+                }
+            });
+        });
+
+        // Handle comment form submission
+        document.querySelectorAll('.comment-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const publicationId = this.getAttribute('data-publication-id');
+                const errorMessage = this.querySelector('.error-message');
+                
+                // Client-side validation
+                if (!formData.get('type') || !formData.get('comment').trim()) {
+                    errorMessage.textContent = 'Veuillez sélectionner une réaction et écrire un commentaire.';
+                    errorMessage.style.display = 'block';
+                    return;
+                }
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const commentsList = document.querySelector(`.comments-list[data-publication-id="${publicationId}"]`);
+                        const noComments = commentsList.querySelector('.no-comments');
+                        
+                        if (noComments) {
+                            noComments.remove();
+                        }
+                        
+                        const newComment = document.createElement('div');
+                        newComment.className = 'comment-item';
+                        newComment.innerHTML = `
+                            <div class="comment-header">
+                                <a href="/profile/${data.username}/" class="comment-author">${data.username}</a>
+                                <span class="comment-reaction">${data.reaction_type_label}</span>
+                                <span class="comment-date">${data.created_at}</span>
+                            </div>
+                            <p class="comment-text">${data.comment}</p>
+                            <form method="POST" action="/report/user/${data.user_id}/" class="report-form" data-user-id="${data.user_id}">
+                                <input type="hidden" name="csrfmiddlewaretoken" value="${formData.get('csrfmiddlewaretoken')}">
+                                <button type="submit" class="report-comment" title="Signaler">
+                                    <i class="fas fa-flag"></i> Signaler
+                                </button>
+                            </form>
+                        `;
+                        
+                        commentsList.prepend(newComment);
+                        this.reset();
+                        errorMessage.style.display = 'none';
                     } else {
-                        errorMessage.classList.add('hidden');
+                        errorMessage.textContent = data.error || 'Une erreur est survenue';
+                        errorMessage.style.display = 'block';
                     }
-
-                    fetch(actionUrl, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
-                        },
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const commentsList = document.querySelector(`.comments-list[data-publication-id="${publicationId}"]`);
-                            const noComments = commentsList.querySelector('p.text-gray-500');
-                            if (noComments) {
-                                noComments.remove();
-                            }
-                            const newComment = document.createElement('div');
-                            newComment.className = 'bg-gray-100 p-3 rounded-lg';
-                            newComment.innerHTML = `
-                                <p class="text-sm font-medium text-gray-800">
-                                    <a href="/profile/${data.username}/" class="hover:underline">${data.username}</a> (${data.reaction_type_label})
-                                    <form method="POST" action="/report/user/${data.user_id}/" class="inline report-form" data-user-id="${data.user_id}">
-                                        <input type="hidden" name="csrfmiddlewaretoken" value="${formData.get('csrfmiddlewaretoken')}">
-                                        <button type="submit" class="text-red-500 hover:text-red-600 text-sm ml-2">Signaler</button>
-                                    </form>
-                                </p>
-                                <p class="text-sm text-gray-600">${data.comment}</p>
-                                <p class="text-xs text-gray-500">${data.created_at}</p>
-                            `;
-                            commentsList.prepend(newComment);
-                            commentInput.value = '';
-                            form.querySelectorAll('input[name="type"]').forEach(input => input.checked = false);
-                        } else {
-                            errorMessage.textContent = `Erreur : ${data.error}`;
-                            errorMessage.classList.remove('hidden');
-                        }
-                    })
-                    .catch(error => {
-                        errorMessage.textContent = 'Erreur réseau. Veuillez réessayer.';
-                        errorMessage.classList.remove('hidden');
-                        console.error('Error:', error);
-                    });
-                });
-            });
-
-            // Handle like/dislike form submissions
-            const likeDislikeForms = document.querySelectorAll('.like-form, .dislike-form');
-            likeDislikeForms.forEach(form => {
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    const formData = new FormData(form);
-                    const publicationId = form.getAttribute('data-publication-id');
-                    const action = form.getAttribute('data-action');
-                    const actionUrl = form.getAttribute('action');
-                    fetch(actionUrl, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
-                        },
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const likeButton = document.querySelector(`.like-form[data-publication-id="${publicationId}"] button i`);
-                            const dislikeButton = document.querySelector(`.dislike-form[data-publication-id="${publicationId}"] button i`);
-                            const likeCount = document.querySelector(`.like-form[data-publication-id="${publicationId}"] .like-count`);
-                            const dislikeCount = document.querySelector(`.dislike-form[data-publication-id="${publicationId}"] .dislike-count`);
-                            likeCount.textContent = data.likes;
-                            dislikeCount.textContent = data.dislikes;
-                            likeButton.className = `fa ${data.user_liked ? 'fa-solid fa-thumbs-up text-zevaba-light-blue' : 'fa-regular fa-thumbs-up text-zevaba-dark-blue'}`;
-                            dislikeButton.className = `fa ${data.user_disliked ? 'fa-solid fa-thumbs-down text-zevaba-light-blue' : 'fa-regular fa-thumbs-down text-zevaba-dark-blue'}`;
-                        } else {
-                            alert('Erreur : ' + data.error);
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
-                });
-            });
-
-            // Handle report form submissions
-            const reportForms = document.querySelectorAll('.report-form');
-            reportForms.forEach(form => {
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    const formData = new FormData(form);
-                    const userId = form.getAttribute('data-user-id');
-                    const actionUrl = form.getAttribute('action');
-                    fetch(actionUrl, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
-                        },
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('Utilisateur signalé avec succès.');
-                        } else {
-                            alert('Erreur : ' + data.error);
-                        }
-                    })
-                    .catch(error => console.error('Error:', error));
+                })
+                .catch(error => {
+                    errorMessage.textContent = 'Erreur réseau. Veuillez réessayer.';
+                    errorMessage.style.display = 'block';
+                    console.error('Error:', error);
                 });
             });
         });
-    </script>
+
+        // Handle like/dislike form submissions
+        document.querySelectorAll('.like-form, .dislike-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const publicationId = this.getAttribute('data-publication-id');
+                const action = this.getAttribute('data-action');
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const likeButton = document.querySelector(`.like-form[data-publication-id="${publicationId}"] .like`);
+                        const dislikeButton = document.querySelector(`.dislike-form[data-publication-id="${publicationId}"] .dislike`);
+                        const likeCount = document.querySelector(`.like-form[data-publication-id="${publicationId}"] .count`);
+                        const dislikeCount = document.querySelector(`.dislike-form[data-publication-id="${publicationId}"] .count`);
+                        
+                        likeCount.textContent = data.likes;
+                        dislikeCount.textContent = data.dislikes;
+                        
+                        if (action === 'like') {
+                            if (data.user_liked) {
+                                likeButton.classList.add('active');
+                            } else {
+                                likeButton.classList.remove('active');
+                            }
+                            
+                            if (data.user_disliked) {
+                                dislikeButton.classList.remove('active');
+                            }
+                        } else {
+                            if (data.user_disliked) {
+                                dislikeButton.classList.add('active');
+                            } else {
+                                dislikeButton.classList.remove('active');
+                            }
+                            
+                            if (data.user_liked) {
+                                likeButton.classList.remove('active');
+                            }
+                        }
+                    } else {
+                        alert('Erreur : ' + data.error);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+
+        // Handle report form submissions
+        document.querySelectorAll('.report-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                const userId = this.getAttribute('data-user-id');
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Utilisateur signalé avec succès.');
+                    } else {
+                        alert('Erreur : ' + data.error);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            });
+        });
+    });
+</script>
 {% endblock %}

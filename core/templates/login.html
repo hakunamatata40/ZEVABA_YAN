@@ -1,20 +1,335 @@
 {% extends 'base.html' %}
 {% block title %}Connexion{% endblock %}
+
 {% block content %}
-    <div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow">
-        <h1 class="text-2xl font-bold mb-4">Connexion</h1>
-        <form method="post">
-            {% csrf_token %}
-            <input type="text" name="username" placeholder="Nom d'utilisateur" class="border p-2 w-full mb-4">
-            <input type="password" name="password" placeholder="Mot de passe" class="border p-2 w-full mb-4">
-            <button type="submit" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded w-full">Se connecter</button>
-        </form>
-        {% if messages %}
-            <div class="mt-4 text-red-500">
-                {% for message in messages %}
-                    {{ message }}
-                {% endfor %}
+<div class="auth-container animate-fadeIn">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1>Connexion</h1>
+            <div class="auth-logo">
+                <img src="{% static 'images/logo.png' %}" alt="Logo Zevaba">
             </div>
+        </div>
+
+        <form method="post" class="auth-form">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="username" placeholder="Nom d'utilisateur" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="input-with-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" placeholder="Mot de passe" id="password" required>
+                    <button type="button" class="password-toggle">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="auth-button">
+                <span>Se connecter</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+
+        {% if messages %}
+        <div class="auth-messages">
+            {% for message in messages %}
+            <div class="message error">{{ message }}</div>
+            {% endfor %}
+        </div>
         {% endif %}
+
+        <div class="auth-footer">
+            <p>Pas encore de compte ? <a href="{% url 'register' %}">S'inscrire</a></p>
+        </div>
     </div>
+</div>
+
+<style>
+    /* Styles généraux pour les pages d'authentification */
+    .auth-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: calc(100vh - 200px);
+        padding: 2rem;
+        background: linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, rgba(135, 206, 235, 0.1) 100%);
+    }
+
+    .auth-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 15px 30px rgba(30, 58, 138, 0.15);
+        width: 100%;
+        max-width: 450px;
+        padding: 2.5rem;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .auth-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(30, 58, 138, 0.2);
+    }
+
+    .auth-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 8px;
+        background: linear-gradient(90deg, var(--zevaba-dark-blue) 0%, var(--zevaba-light-blue) 100%);
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .auth-header h1 {
+        font-size: 2rem;
+        color: var(--zevaba-dark-blue);
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+
+    .auth-logo {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1rem;
+        border-radius: 50%;
+        background: rgba(30, 58, 138, 0.1);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 15px;
+        box-shadow: 0 5px 15px rgba(30, 58, 138, 0.1);
+    }
+
+    .auth-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        position: relative;
+    }
+
+    .input-with-icon {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .input-with-icon i {
+        position: absolute;
+        left: 15px;
+        color: var(--zevaba-dark-blue);
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+    }
+
+    .input-with-icon input {
+        width: 100%;
+        padding: 15px 15px 15px 45px;
+        border: 2px solid rgba(30, 58, 138, 0.1);
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background-color: rgba(30, 58, 138, 0.03);
+    }
+
+    .input-with-icon input:focus {
+        border-color: var(--zevaba-light-blue);
+        box-shadow: 0 0 0 3px rgba(135, 206, 235, 0.3);
+        outline: none;
+        background-color: white;
+    }
+
+    .input-with-icon input:focus + i {
+        color: var(--zevaba-light-blue);
+        transform: scale(1.1);
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 15px;
+        background: none;
+        border: none;
+        color: rgba(30, 58, 138, 0.5);
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+    }
+
+    .password-toggle:hover {
+        color: var(--zevaba-dark-blue);
+        transform: scale(1.1);
+    }
+
+    .auth-button {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        background: linear-gradient(90deg, var(--zevaba-dark-blue) 0%, var(--zevaba-light-blue) 100%);
+        color: white;
+        border: none;
+        padding: 15px;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(30, 58, 138, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .auth-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(30, 58, 138, 0.3);
+    }
+
+    .auth-button:active {
+        transform: translateY(1px);
+    }
+
+    .auth-button i {
+        transition: transform 0.3s ease;
+    }
+
+    .auth-button:hover i {
+        transform: translateX(5px);
+    }
+
+    .auth-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: 0.5s;
+    }
+
+    .auth-button:hover::before {
+        left: 100%;
+    }
+
+    .auth-messages {
+        margin-top: 1.5rem;
+    }
+
+    .message {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        text-align: center;
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    .message.error {
+        background-color: rgba(255, 0, 0, 0.1);
+        color: #d32f2f;
+        border-left: 4px solid #d32f2f;
+    }
+
+    .auth-footer {
+        text-align: center;
+        margin-top: 2rem;
+        color: rgba(30, 58, 138, 0.7);
+        font-size: 0.9rem;
+    }
+
+    .auth-footer a {
+        color: var(--zevaba-dark-blue);
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .auth-footer a:hover {
+        color: var(--zevaba-light-blue);
+        text-decoration: underline;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .auth-container {
+            padding: 1rem;
+            min-height: calc(100vh - 150px);
+        }
+
+        .auth-card {
+            padding: 1.5rem;
+        }
+
+        .auth-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .auth-logo {
+            width: 60px;
+            height: 60px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .auth-card {
+            padding: 1.25rem;
+        }
+
+        .input-with-icon input {
+            padding: 12px 12px 12px 40px;
+        }
+    }
+</style>
+
+<script>
+    // Toggle password visibility
+    const passwordToggle = document.querySelector('.password-toggle');
+    if (passwordToggle) {
+        passwordToggle.addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const icon = this.querySelector('i');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    }
+
+    // Animation for form inputs
+    document.addEventListener('DOMContentLoaded', () => {
+        const inputs = document.querySelectorAll('.form-group');
+        inputs.forEach((input, index) => {
+            input.style.animationDelay = `${index * 100}ms`;
+            input.classList.add('animate-fadeIn');
+        });
+    });
+</script>
 {% endblock %}

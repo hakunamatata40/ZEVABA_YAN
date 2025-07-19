@@ -1,46 +1,631 @@
 {% extends 'base.html' %}
 {% block title %}Accueil - ZEVABA{% endblock %}
 {% block content %}
-    <div class="container mx-auto p-4">
-        <h1 class="text-3xl font-bold mb-6 text-zevaba-dark-blue">Bienvenue sur ZEVABA</h1>
-        
-        <!-- Search Bar with Autocomplete -->
-        <div class="mb-6 relative">
-            <input type="text" id="search-input" placeholder="Rechercher utilisateurs ou clubs..." class="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue" autocomplete="off">
-            <div id="search-suggestions" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 hidden max-h-96 overflow-y-auto">
-                <div id="users-section" class="p-2">
-                    <h3 class="text-sm font-semibold text-zevaba-dark-blue">Utilisateurs</h3>
-                    <div id="users-list"></div>
-                </div>
-                <div id="clubs-section" class="p-2 border-t border-gray-200">
-                    <h3 class="text-sm font-semibold text-zevaba-dark-blue">Clubs</h3>
-                    <div id="clubs-list"></div>
+    <div class="home-container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">Bienvenue sur <span class="logo-highlight">ZEVABA</span></h1>
+                <p class="hero-subtitle">Découvrez, connectez-vous, challengez</p>
+                
+                <!-- Animated Search Bar -->
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="Rechercher utilisateurs ou clubs..." class="search-input" autocomplete="off">
+                    <div class="search-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24">
+                            <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                        </svg>
+                    </div>
+                    <div id="search-suggestions" class="search-suggestions">
+                        <div id="users-section" class="suggestion-section">
+                            <h3 class="section-title">Utilisateurs</h3>
+                            <div id="users-list" class="suggestion-list"></div>
+                        </div>
+                        <div id="clubs-section" class="suggestion-section">
+                            <h3 class="section-title">Clubs</h3>
+                            <div id="clubs-list" class="suggestion-list"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+            <div class="hero-animation">
+                <div class="circle-animation"></div>
+                <div class="circle-animation delay-1"></div>
+                <div class="circle-animation delay-2"></div>
+            </div>
+        </section>
 
-        <!-- Featured Clubs -->
-        <h2 class="text-xl font-bold mb-4 text-zevaba-dark-blue">Clubs en vedette</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {% for club in clubs %}
-                <div class="bg-white p-4 rounded-lg shadow hover:shadow-xl transition-shadow">
-                    <a href="{% url 'club_detail' club.pk %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue font-bold">{{ club.name }}</a>
-                    <p class="text-gray-600">{{ club.description|truncatewords:20 }}</p>
-                </div>
-            {% endfor %}
-        </div>
+        <!-- Featured Sections -->
+        <section class="featured-section">
+            <h2 class="section-header">
+                <span class="header-text">Clubs en vedette</span>
+                <span class="header-underline"></span>
+            </h2>
+            
+            <div class="card-grid">
+                {% for club in clubs %}
+                    <div class="featured-card club-card">
+                        <div class="card-bg" style="background-color: {{ club.color|default:'#3a86ff' }};"></div>
+                        <div class="card-content">
+                            <a href="{% url 'club_detail' club.pk %}" class="card-title">{{ club.name }}</a>
+                            <p class="card-description">{{ club.description|truncatewords:20 }}</p>
+                            <div class="card-footer">
+                                <span class="members-count">{{ club.members_count }} membres</span>
+                                {% if user.is_authenticated %}
+                                    <a href="/club/{{ club.id }}/{{ club.is_member|yesno:'unsubscribe,subscribe' }}/" class="subscribe-btn {{ club.is_member|yesno:'subscribed,unsubscribed' }}">
+                                        {{ club.is_member|yesno:'Abonné,S\'abonner' }}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
 
-        <!-- Featured Challenges -->
-        <h2 class="text-xl font-bold mb-4 mt-6 text-zevaba-dark-blue">Défis en vedette</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {% for challenge in challenges %}
-                <div class="bg-white p-4 rounded-lg shadow hover:shadow-xl transition-shadow">
-                    <h3 class="text-lg font-semibold text-zevaba-dark-blue">{{ challenge.title }}</h3>
-                    <p class="text-gray-600">{{ challenge.description|truncatewords:20 }}</p>
-                </div>
-            {% endfor %}
-        </div>
+        <section class="featured-section">
+            <h2 class="section-header">
+                <span class="header-text">Défis en vedette</span>
+                <span class="header-underline"></span>
+            </h2>
+            
+            <div class="card-grid">
+                {% for challenge in challenges %}
+                    <div class="featured-card challenge-card">
+                        <div class="challenge-badge">Défi</div>
+                        <div class="card-content">
+                            <h3 class="card-title">{{ challenge.title }}</h3>
+                            <p class="card-description">{{ challenge.description|truncatewords:20 }}</p>
+                            <div class="progress-container">
+                                <div class="progress-bar" style="width: {{ challenge.completion_percentage }}%"></div>
+                                <span class="progress-text">{{ challenge.participants_count }} participants</span>
+                            </div>
+                            <button class="cta-button join-challenge">Rejoindre le défi</button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
     </div>
+
+    <style>
+        /* Base Styles */
+        :root {
+            --primary-color: #3a86ff;
+            --primary-dark: #2667cc;
+            --primary-light: #e6f0ff;
+            --secondary-color: #8338ec;
+            --accent-color: #ff006e;
+            --dark-color: #1a1a2e;
+            --light-color: #f8f9fa;
+            --gray-color: #6c757d;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f5f7ff;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+
+        .home-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            padding: 60px 0;
+            text-align: center;
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-title {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: textGradient 8s ease infinite;
+            background-size: 200% 200%;
+        }
+
+        @keyframes textGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .logo-highlight {
+            font-weight: 800;
+            text-shadow: 0 2px 10px rgba(58, 134, 255, 0.3);
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--gray-color);
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-out 0.3s both;
+        }
+
+        /* Search Bar */
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+            animation: slideUp 0.8s ease-out 0.4s both;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            background-color: white;
+        }
+
+        .search-input:focus {
+            outline: none;
+            box-shadow: 0 6px 25px rgba(58, 134, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-color);
+            pointer-events: none;
+        }
+
+        .search-icon svg {
+            fill: currentColor;
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            margin-top: 10px;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(10px);
+            visibility: hidden;
+            transition: var(--transition);
+            z-index: 1000;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .search-suggestions.visible {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        .suggestion-section {
+            padding: 15px;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--gray-color);
+            margin-bottom: 10px;
+            display: block;
+            letter-spacing: 1px;
+        }
+
+        .suggestion-list div {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 5px 0;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .suggestion-list div:hover {
+            background-color: var(--primary-light);
+        }
+
+        .suggestion-list a {
+            color: var(--dark-color);
+            text-decoration: none;
+            flex-grow: 1;
+        }
+
+        .suggestion-list .report-form {
+            display: inline;
+        }
+
+        .suggestion-list button {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        /* Hero Animation */
+        .hero-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .circle-animation {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            opacity: 0.1;
+            animation: float 15s infinite linear;
+        }
+
+        .circle-animation:nth-child(1) {
+            width: 300px;
+            height: 300px;
+            top: -50px;
+            left: -50px;
+        }
+
+        .circle-animation:nth-child(2) {
+            width: 200px;
+            height: 200px;
+            bottom: -30px;
+            right: 20%;
+            animation-delay: 2s;
+            animation-duration: 12s;
+        }
+
+        .circle-animation:nth-child(3) {
+            width: 150px;
+            height: 150px;
+            top: 30%;
+            right: -30px;
+            animation-delay: 4s;
+            animation-duration: 10s;
+        }
+
+        .delay-1 {
+            animation-delay: 3s;
+        }
+
+        .delay-2 {
+            animation-delay: 6s;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+            100% { transform: translateY(0) rotate(360deg); }
+        }
+
+        /* Featured Sections */
+        .featured-section {
+            margin-bottom: 60px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .section-header {
+            display: inline-block;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .header-text {
+            font-size: 1.8rem;
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
+            color: var(--dark-color);
+        }
+
+        .header-underline {
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 3px;
+            transform: scaleX(0.8);
+            transform-origin: left;
+            animation: underlineGrow 1s ease-out forwards;
+        }
+
+        @keyframes underlineGrow {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(0.8); }
+        }
+
+        /* Card Grid */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        /* Featured Cards */
+        .featured-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+            height: 100%;
+        }
+
+        .featured-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-bg {
+            height: 120px;
+            width: 100%;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .club-card .card-bg {
+            clip-path: polygon(0 0, 100% 0, 100% 70%, 0 100%);
+        }
+
+        .challenge-card .card-bg {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 70%);
+        }
+
+        .card-content {
+            padding: 20px;
+            position: relative;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--dark-color);
+            text-decoration: none;
+            display: block;
+            transition: var(--transition);
+        }
+
+        .card-title:hover {
+            color: var(--primary-color);
+        }
+
+        .card-description {
+            color: var(--gray-color);
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .members-count {
+            color: var(--gray-color);
+        }
+
+        .subscribe-btn {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .subscribed {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .unsubscribed {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .subscribe-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Challenge Card Specific */
+        .challenge-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            z-index: 2;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .progress-container {
+            margin: 15px 0;
+            height: 8px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+
+        .progress-text {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--gray-color);
+            margin-top: 5px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            text-align: center;
+            width: 100%;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(58, 134, 255, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(58, 134, 255, 0.4);
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .hero {
+                padding: 40px 0;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem;
+            }
+
+            .search-input {
+                padding: 12px 45px 12px 15px;
+            }
+
+            .section-header {
+                margin-bottom: 20px;
+            }
+
+            .header-text {
+                font-size: 1.5rem;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .featured-card {
+                max-width: 100%;
+            }
+
+            .circle-animation:nth-child(1) {
+                width: 200px;
+                height: 200px;
+            }
+
+            .circle-animation:nth-child(2) {
+                width: 150px;
+                height: 150px;
+            }
+
+            .circle-animation:nth-child(3) {
+                width: 100px;
+                height: 100px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .home-container {
+                padding: 0 15px;
+            }
+
+            .hero {
+                padding: 30px 0;
+            }
+
+            .hero-title {
+                font-size: 1.8rem;
+            }
+
+            .search-input {
+                font-size: 0.9rem;
+            }
+
+            .featured-section {
+                margin-bottom: 40px;
+            }
+
+            .card-content {
+                padding: 15px;
+            }
+
+            .card-title {
+                font-size: 1.1rem;
+            }
+
+            .card-description {
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const searchInput = document.getElementById('search-input');
@@ -48,64 +633,93 @@
             const usersList = document.getElementById('users-list');
             const clubsList = document.getElementById('clubs-list');
 
+            // Search functionality with debounce
+            let searchTimeout;
             searchInput.addEventListener('input', function () {
+                clearTimeout(searchTimeout);
                 const query = this.value.trim();
+                
                 if (query.length === 0) {
-                    suggestionsBox.classList.add('hidden');
+                    suggestionsBox.classList.remove('visible');
                     return;
                 }
 
-                fetch(`/search_suggestions/?query=${encodeURIComponent(query)}`, {
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    usersList.innerHTML = '';
-                    clubsList.innerHTML = '';
-                    if (data.users.length === 0 && data.clubs.length === 0) {
-                        suggestionsBox.classList.add('hidden');
-                        return;
-                    }
+                searchTimeout = setTimeout(() => {
+                    fetch(`/search_suggestions/?query=${encodeURIComponent(query)}`, {
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        usersList.innerHTML = '';
+                        clubsList.innerHTML = '';
+                        
+                        if (data.users.length === 0 && data.clubs.length === 0) {
+                            suggestionsBox.classList.remove('visible');
+                            return;
+                        }
 
-                    data.users.forEach(user => {
-                        const div = document.createElement('div');
-                        div.className = 'p-2 hover:bg-gray-100 cursor-pointer';
-                        div.innerHTML = `
-                            <a href="/profile/${user.username}/" class="text-zevaba-dark-blue hover:text-zevaba-light-blue">${user.username}</a>
-                            {% if user.is_authenticated %}
-                                <a href="/message/${user.id}/" class="text-sm text-zevaba-dark-blue hover:text-zevaba-light-blue ml-2">Message</a>
-                                <form method="POST" action="/report/user/${user.id}/" class="inline report-form" data-user-id="${user.id}">
-                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                                    <button type="submit" class="text-sm text-red-500 hover:text-red-600 ml-2">Signaler</button>
-                                </form>
-                            {% endif %}
-                        `;
-                        usersList.appendChild(div);
-                    });
+                        // Animate in suggestions box
+                        suggestionsBox.classList.add('visible');
 
-                    data.clubs.forEach(club => {
-                        const div = document.createElement('div');
-                        div.className = 'p-2 hover:bg-gray-100 cursor-pointer';
-                        div.innerHTML = `
-                            <a href="/club/${club.id}/" class="text-zevaba-dark-blue hover:text-zevaba-light-blue">${club.name}</a>
-                            {% if user.is_authenticated %}
-                                <form method="POST" action="/club/${club.id}/${club.is_member ? 'unsubscribe' : 'subscribe'}/" class="inline">
-                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                                    <button type="submit" class="text-sm text-white px-2 py-1 rounded ${club.is_member ? 'bg-red-500 hover:bg-red-600' : 'bg-zevaba-light-blue hover:bg-zevaba-light-blue/80'} ml-2">
-                                        ${club.is_member ? 'Se désabonner' : 'S\'abonner'}
-                                    </button>
-                                </form>
-                            {% endif %}
-                        `;
-                        clubsList.appendChild(div);
-                    });
+                        // Add users
+                        data.users.forEach(user => {
+                            const userElement = document.createElement('div');
+                            userElement.className = 'user-suggestion';
+                            userElement.innerHTML = `
+                                <a href="/profile/${user.username}/" class="user-link">${user.username}</a>
+                                {% if user.is_authenticated %}
+                                    <div class="user-actions">
+                                        <a href="/message/${user.id}/" class="message-btn">Message</a>
+                                        <form method="POST" action="/report/user/${user.id}/" class="report-form" data-user-id="${user.id}">
+                                            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                            <button type="submit" class="report-btn">Signaler</button>
+                                        </form>
+                                    </div>
+                                {% endif %}
+                            `;
+                            usersList.appendChild(userElement);
+                        });
 
-                    suggestionsBox.classList.remove('hidden');
-                })
-                .catch(error => console.error('Error:', error));
+                        // Add clubs
+                        data.clubs.forEach(club => {
+                            const clubElement = document.createElement('div');
+                            clubElement.className = 'club-suggestion';
+                            clubElement.innerHTML = `
+                                <a href="/club/${club.id}/" class="club-link">${club.name}</a>
+                                {% if user.is_authenticated %}
+                                    <form method="POST" action="/club/${club.id}/${club.is_member ? 'unsubscribe' : 'subscribe'}/" class="subscribe-form">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                        <button type="submit" class="subscribe-action ${club.is_member ? 'subscribed' : 'unsubscribed'}">
+                                            ${club.is_member ? 'Abonné' : 'S\'abonner'}
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            `;
+                            clubsList.appendChild(clubElement);
+                        });
+
+                        // Animate items
+                        animateItems();
+                    })
+                    .catch(error => console.error('Error:', error));
+                }, 300);
             });
+
+            function animateItems() {
+                const items = document.querySelectorAll('.user-suggestion, .club-suggestion');
+                items.forEach((item, index) => {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateY(10px)';
+                    item.style.transition = 'all 0.3s ease ' + (index * 0.1) + 's';
+                    
+                    setTimeout(() => {
+                        item.style.opacity = '1';
+                        item.style.transform = 'translateY(0)';
+                    }, 10);
+                });
+            }
 
             // Handle report form submissions
             document.addEventListener('click', function (e) {
@@ -114,8 +728,8 @@
                     e.preventDefault();
                     const formData = new FormData(reportForm);
                     const userId = reportForm.getAttribute('data-user-id');
-                    const actionUrl = reportForm.getAttribute('action');
-                    fetch(actionUrl, {
+                    
+                    fetch(reportForm.action, {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -125,20 +739,59 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            alert('Utilisateur signalé avec succès.');
+                            showNotification('Utilisateur signalé avec succès', 'success');
                         } else {
-                            alert('Erreur : ' + data.error);
+                            showNotification('Erreur: ' + data.error, 'error');
                         }
                     })
-                    .catch(error => console.error('Error:', error));
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showNotification('Une erreur est survenue', 'error');
+                    });
                 }
             });
 
             // Hide suggestions when clicking outside
             document.addEventListener('click', function (e) {
                 if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
-                    suggestionsBox.classList.add('hidden');
+                    suggestionsBox.classList.remove('visible');
                 }
+            });
+
+            // Notification function
+            function showNotification(message, type) {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.classList.add('show');
+                }, 10);
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 3000);
+            }
+
+            // Add animation to cards on scroll
+            const observerOptions = {
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate');
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.featured-card').forEach(card => {
+                observer.observe(card);
             });
         });
     </script>
