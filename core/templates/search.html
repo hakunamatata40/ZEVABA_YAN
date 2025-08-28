@@ -1,56 +1,465 @@
 {% extends 'base.html' %}
 {% block title %}Recherche{% endblock %}
 {% block content %}
-    <div class="container mx-auto p-4">
-        <h1 class="text-2xl font-bold mb-4 text-zevaba-dark-blue">Résultats de recherche pour "{{ query }}"</h1>
-        <form method="GET" action="{% url 'search' %}" class="flex items-center space-x-2 mb-6">
-            <input type="text" name="query" value="{{ query }}" placeholder="Rechercher utilisateurs ou clubs..." class="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-zevaba-light-blue">
-            <button type="submit" class="bg-zevaba-dark-blue text-white px-4 py-2 rounded-lg hover:bg-zevaba-dark-blue/80 transition-colors">Rechercher</button>
+    <div class="search-container">
+        <h1 class="search-title">Résultats de recherche pour "<span class="query-text">{{ query }}</span>"</h1>
+        
+        <form method="GET" action="{% url 'search' %}" class="search-form">
+            <div class="search-input-group">
+                <input type="text" name="query" value="{{ query }}" placeholder="Rechercher utilisateurs ou clubs..." class="search-input">
+                <button type="submit" class="search-button">
+                    <span>Rechercher</span>
+                    <i class="search-icon"></i>
+                </button>
+            </div>
         </form>
-        <h2 class="text-xl font-bold mb-2 text-zevaba-dark-blue">Utilisateurs</h2>
-        <div class="space-y-4">
-            {% for user in users %}
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <a href="{% url 'profile' user.username %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue font-bold">{{ user.username }}</a>
-                    {% if request.user.is_authenticated and request.user != user %}
-                        <a href="{% url 'send_message' user.pk %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue ml-4">Envoyer un message</a>
-                        <form method="POST" action="{% url 'report_user' user.pk %}" class="inline report-form" data-user-id="{{ user.pk }}">
-                            {% csrf_token %}
-                            <button type="submit" class="text-red-500 hover:text-red-600 ml-4">Signaler</button>
-                        </form>
-                    {% endif %}
-                </div>
-            {% endfor %}
-            {% if not users %}
-                <p class="text-gray-500">Aucun utilisateur trouvé.</p>
-            {% endif %}
+        
+        <div class="results-section">
+            <h2 class="section-title">Utilisateurs</h2>
+            <div class="results-grid">
+                {% for user in users %}
+                    <div class="result-card user-card">
+                        <div class="card-content">
+                            <a href="{% url 'profile' user.username %}" class="username">{{ user.username }}</a>
+                            {% if request.user.is_authenticated and request.user != user %}
+                                <div class="user-actions">
+                                    <a href="{% url 'send_message' user.pk %}" class="action-btn message-btn">
+                                        <i class="icon-message"></i> Message
+                                    </a>
+                                    <form method="POST" action="{% url 'report_user' user.pk %}" class="report-form" data-user-id="{{ user.pk }}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="action-btn report-btn">
+                                            <i class="icon-report"></i> Signaler
+                                        </button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-wave"></div>
+                    </div>
+                {% endfor %}
+                {% if not users %}
+                    <p class="no-results">Aucun utilisateur trouvé.</p>
+                {% endif %}
+            </div>
         </div>
-        <h2 class="text-xl font-bold mb-2 mt-6 text-zevaba-dark-blue">Clubs</h2>
-        <div class="space-y-4">
-            {% for club in clubs %}
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <a href="{% url 'club_detail' club.pk %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue font-bold">{{ club.name }}</a>
-                    <p class="text-gray-600">{{ club.description|truncatewords:20 }}</p>
-                    {% if request.user.is_authenticated %}
-                        {% if request.user in club.members.all %}
-                            <form method="POST" action="{% url 'club_unsubscribe' club.pk %}" class="inline">
-                                {% csrf_token %}
-                                <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors mt-2">Se désabonner</button>
-                            </form>
-                        {% else %}
-                            <form method="POST" action="{% url 'club_subscribe' club.pk %}" class="inline">
-                                {% csrf_token %}
-                                <button type="submit" class="bg-zevaba-light-blue text-white px-4 py-2 rounded hover:bg-zevaba-light-blue/80 transition-colors mt-2">S'abonner</button>
-                            </form>
-                        {% endif %}
-                    {% endif %}
-                </div>
-            {% endfor %}
-            {% if not clubs %}
-                <p class="text-gray-500">Aucun club trouvé.</p>
-            {% endif %}
+        
+        <div class="results-section">
+            <h2 class="section-title">Clubs</h2>
+            <div class="results-grid">
+                {% for club in clubs %}
+                    <div class="result-card club-card">
+                        <div class="card-content">
+                            <a href="{% url 'club_detail' club.pk %}" class="club-name">{{ club.name }}</a>
+                            <p class="club-description">{{ club.description|truncatewords:20 }}</p>
+                            {% if request.user.is_authenticated %}
+                                <div class="club-actions">
+                                    {% if request.user in club.members.all %}
+                                        <form method="POST" action="{% url 'club_unsubscribe' club.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="action-btn unsubscribe-btn">
+                                                <i class="icon-exit"></i> Se désabonner
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <form method="POST" action="{% url 'club_subscribe' club.pk %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="action-btn subscribe-btn">
+                                                <i class="icon-join"></i> S'abonner
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="card-wave"></div>
+                    </div>
+                {% endfor %}
+                {% if not clubs %}
+                    <p class="no-results">Aucun club trouvé.</p>
+                {% endif %}
+            </div>
         </div>
     </div>
+
+    <style>
+        /* Variables CSS */
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --text-color: #333;
+            --text-light: #7f8c8d;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+        
+        /* Base Styles */
+        .search-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+        }
+        
+        /* Search Title */
+        .search-title {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: var(--dark-color);
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+        
+        .search-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--success-color));
+            border-radius: 3px;
+        }
+        
+        .query-text {
+            color: var(--secondary-color);
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        
+        /* Search Form */
+        .search-form {
+            margin-bottom: 3rem;
+        }
+        
+        .search-input-group {
+            display: flex;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+            box-shadow: var(--shadow);
+            border-radius: 50px;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+        
+        .search-input-group:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: none;
+            font-size: 1rem;
+            outline: none;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .search-button {
+            padding: 0 1.5rem;
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+        
+        .search-button:hover {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+        
+        .search-icon {
+            margin-left: 0.5rem;
+            width: 20px;
+            height: 20px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            transition: var(--transition);
+        }
+        
+        .search-button:hover .search-icon {
+            transform: scale(1.2);
+        }
+        
+        /* Results Section */
+        .results-section {
+            margin-bottom: 3rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--light-color);
+            color: var(--dark-color);
+            position: relative;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 50px;
+            height: 2px;
+            background: var(--secondary-color);
+        }
+        
+        /* Results Grid */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        /* Result Card */
+        .result-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+        }
+        
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .user-card {
+            border-top: 3px solid var(--secondary-color);
+        }
+        
+        .club-card {
+            border-top: 3px solid var(--success-color);
+        }
+        
+        .card-content {
+            padding: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .card-wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: linear-gradient(90deg, transparent, rgba(52, 152, 219, 0.3), transparent);
+            animation: wave 2s linear infinite;
+            opacity: 0;
+            transition: var(--transition);
+        }
+        
+        .result-card:hover .card-wave {
+            opacity: 1;
+        }
+        
+        /* User and Club Info */
+        .username, .club-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--dark-color);
+            text-decoration: none;
+            transition: var(--transition);
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .username:hover, .club-name:hover {
+            color: var(--secondary-color);
+            transform: translateX(5px);
+        }
+        
+        .club-description {
+            color: var(--text-light);
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        /* Action Buttons */
+        .user-actions, .club-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: var(--transition);
+        }
+        
+        .action-btn i {
+            margin-right: 0.3rem;
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+        }
+        
+        .message-btn {
+            background-color: var(--light-color);
+            color: var(--dark-color);
+        }
+        
+        .message-btn:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .report-btn {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--accent-color);
+        }
+        
+        .report-btn:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .subscribe-btn {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: var(--success-color);
+        }
+        
+        .subscribe-btn:hover {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .unsubscribe-btn {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: var(--accent-color);
+        }
+        
+        .unsubscribe-btn:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        /* Icons */
+        .icon-message {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232c3e50'%3E%3Cpath d='M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .message-btn:hover .icon-message {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z'/%3E%3C/svg%3E");
+        }
+        
+        .icon-report {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e74c3c'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .report-btn:hover .icon-report {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/%3E%3C/svg%3E");
+        }
+        
+        .icon-join {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232ecc71'%3E%3Cpath d='M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .subscribe-btn:hover .icon-join {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z'/%3E%3C/svg%3E");
+        }
+        
+        .icon-exit {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e74c3c'%3E%3Cpath d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .unsubscribe-btn:hover .icon-exit {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/%3E%3C/svg%3E");
+        }
+        
+        /* No Results */
+        .no-results {
+            text-align: center;
+            color: var(--text-light);
+            font-style: italic;
+            grid-column: 1 / -1;
+            padding: 2rem;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        @keyframes wave {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .search-container {
+                padding: 1rem;
+            }
+            
+            .search-title {
+                font-size: 1.5rem;
+            }
+            
+            .search-input-group {
+                flex-direction: column;
+                border-radius: 10px;
+            }
+            
+            .search-input {
+                width: 100%;
+                border-radius: 10px 10px 0 0;
+            }
+            
+            .search-button {
+                width: 100%;
+                border-radius: 0 0 10px 10px;
+                padding: 0.8rem;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const reportForms = document.querySelectorAll('.report-form');
@@ -60,6 +469,13 @@
                     const formData = new FormData(form);
                     const userId = form.getAttribute('data-user-id');
                     const actionUrl = form.getAttribute('action');
+                    
+                    // Add loading animation to button
+                    const btn = form.querySelector('button');
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="icon-loading"></i> En cours...';
+                    btn.disabled = true;
+                    
                     fetch(actionUrl, {
                         method: 'POST',
                         body: formData,
@@ -70,12 +486,43 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            alert('Utilisateur signalé avec succès.');
+                            // Show success animation
+                            btn.innerHTML = '<i class="icon-check"></i> Signalé!';
+                            btn.style.backgroundColor = '#2ecc71';
+                            setTimeout(() => {
+                                btn.innerHTML = originalText;
+                                btn.style.backgroundColor = '';
+                                btn.disabled = false;
+                            }, 2000);
                         } else {
+                            // Show error
+                            btn.innerHTML = '<i class="icon-error"></i> Erreur';
+                            btn.style.backgroundColor = '#e74c3c';
+                            setTimeout(() => {
+                                btn.innerHTML = originalText;
+                                btn.style.backgroundColor = '';
+                                btn.disabled = false;
+                            }, 2000);
                             alert('Erreur : ' + data.error);
                         }
                     })
-                    .catch(error => console.error('Error:', error));
+                    .catch(error => {
+                        console.error('Error:', error);
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    });
+                });
+            });
+            
+            // Add hover effect to cards
+            const cards = document.querySelectorAll('.result-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = '';
                 });
             });
         });

@@ -2,12 +2,19 @@
 {% block title %}Inscription{% endblock %}
 {% load static %}
 {% block content %}
-<div class="auth-container animate-fadeIn">
+<div class="auth-container">
     <div class="auth-card">
         <div class="auth-header">
-            <h1>Créer un compte</h1>
             <div class="auth-logo">
-                <img src="{% static 'images/logo.png' %}" alt="Logo Zevaba">
+                <img src="{% static 'images/logo.png' %}" alt="Logo Zevaba" class="logo-spin">
+            </div>
+            <h1 class="title-animate">Créer un compte</h1>
+            <div class="wave-divider">
+                <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+                    <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" fill="var(--zevaba-light-blue)"></path>
+                    <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5" fill="var(--zevaba-light-blue)"></path>
+                    <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" fill="var(--zevaba-light-blue)"></path>
+                </svg>
             </div>
         </div>
 
@@ -15,7 +22,7 @@
             {% csrf_token %}
 
             {% for field in form %}
-            <div class="form-group animate-fadeIn" style="animation-delay: {{ forloop.counter0|add:1|multiply:0.1 }}s">
+            <div class="form-group" style="--delay: {{ forloop.counter0|add:1 }};">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
 
                 <div class="input-with-icon">
@@ -48,51 +55,293 @@
             </div>
             {% endfor %}
 
-            <button type="submit" class="auth-button">
+            <button type="submit" class="auth-button pulse-hover">
                 <span>S'inscrire</span>
                 <i class="fas fa-user-plus"></i>
             </button>
         </form>
 
         <div class="auth-footer">
-            <p>Vous avez déjà un compte ? <a href="{% url 'login' %}">Connexion</a></p>
+            <p>Vous avez déjà un compte ? <a href="{% url 'login' %}" class="link-animate">Connexion</a></p>
         </div>
     </div>
 </div>
 
 <style>
-    /* Styles spécifiques à la page d'inscription */
-    .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: 600;
-        color: var(--zevaba-dark-blue);
-        font-size: 0.9rem;
+    /* Variables CSS */
+    :root {
+        --zevaba-dark-blue: #1E3A8A;
+        --zevaba-light-blue: #3B82F6;
+        --zevaba-lighter-blue: #93C5FD;
+        --white: #FFFFFF;
+        --light-gray: #F3F4F6;
+        --medium-gray: #E5E7EB;
+        --dark-gray: #6B7280;
+        --error-red: #EF4444;
+        --success-green: #10B981;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
     }
 
+    /* Base styles */
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--light-gray);
+        color: #333;
+        line-height: 1.6;
+    }
+
+    /* Auth container */
+    .auth-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 2rem;
+        background: linear-gradient(135deg, var(--zevaba-lighter-blue) 0%, var(--zevaba-light-blue) 100%);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+    }
+
+    /* Auth card */
+    .auth-card {
+        background: var(--white);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        width: 100%;
+        max-width: 500px;
+        overflow: hidden;
+        transform: translateY(0);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        z-index: 1;
+    }
+
+    .auth-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    /* Auth header */
+    .auth-header {
+        text-align: center;
+        padding: 2rem 2rem 1rem;
+        position: relative;
+    }
+
+    .auth-logo {
+        margin: 0 auto 1.5rem;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: var(--white);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 4px 15px rgba(30, 58, 138, 0.1);
+    }
+
+    .auth-logo img {
+        width: 60px;
+        height: 60px;
+        object-fit: contain;
+    }
+
+    .auth-header h1 {
+        color: var(--zevaba-dark-blue);
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+
+    /* Wave divider */
+    .wave-divider {
+        position: relative;
+        height: 60px;
+        width: 100%;
+        overflow: hidden;
+        margin-bottom: -1px;
+    }
+
+    .wave-divider svg {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Auth form */
+    .auth-form {
+        padding: 1.5rem 2rem 2rem;
+    }
+
+    /* Form groups */
+    .form-group {
+        margin-bottom: 1.5rem;
+        opacity: 0;
+        animation: slideIn 0.5s ease-out forwards;
+        animation-delay: calc(var(--delay) * 0.1s);
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--zevaba-dark-blue);
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+
+    /* Input with icon */
+    .input-with-icon {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .input-with-icon i {
+        position: absolute;
+        left: 15px;
+        color: var(--zevaba-light-blue);
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .input-with-icon input,
+    .input-with-icon select,
+    .input-with-icon textarea {
+        width: 100%;
+        padding: 12px 15px 12px 45px;
+        border: 2px solid var(--medium-gray);
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background-color: var(--light-gray);
+    }
+
+    .input-with-icon input:focus,
+    .input-with-icon select:focus,
+    .input-with-icon textarea:focus {
+        border-color: var(--zevaba-light-blue);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        background-color: var(--white);
+    }
+
+    .input-with-icon input:focus + i,
+    .input-with-icon select:focus + i,
+    .input-with-icon textarea:focus + i {
+        color: var(--zevaba-dark-blue);
+        transform: scale(1.1);
+    }
+
+    /* Password toggle */
+    .password-toggle {
+        position: absolute;
+        right: 15px;
+        background: none;
+        border: none;
+        color: var(--dark-gray);
+        cursor: pointer;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .password-toggle:hover {
+        color: var(--zevaba-dark-blue);
+        transform: scale(1.1);
+    }
+
+    /* Help and error text */
     .help-text {
         font-size: 0.75rem;
         color: rgba(30, 58, 138, 0.6);
         margin-top: 5px;
+        padding-left: 5px;
     }
 
     .error-text {
         font-size: 0.8rem;
-        color: #d32f2f;
+        color: var(--error-red);
         margin-top: 5px;
+        padding-left: 5px;
+        animation: shake 0.5s ease;
     }
 
-    select {
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231E3A8A'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
-        background-repeat: no-repeat;
-        background-position: right 15px center;
-        background-size: 15px;
+    /* Auth button */
+    .auth-button {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, var(--zevaba-light-blue) 0%, var(--zevaba-dark-blue) 100%);
+        color: var(--white);
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
+        position: relative;
+        overflow: hidden;
     }
 
-    /* Animation pour les champs du formulaire */
+    .auth-button i {
+        transition: transform 0.3s ease;
+    }
+
+    .auth-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(30, 58, 138, 0.4);
+    }
+
+    .auth-button:hover i {
+        transform: translateX(5px);
+    }
+
+    .auth-button:active {
+        transform: translateY(0);
+    }
+
+    /* Auth footer */
+    .auth-footer {
+        text-align: center;
+        padding: 1.5rem 2rem 2rem;
+        color: var(--dark-gray);
+        font-size: 0.9rem;
+    }
+
+    .auth-footer a {
+        color: var(--zevaba-light-blue);
+        text-decoration: none;
+        font-weight: 600;
+        position: relative;
+    }
+
+    /* Animations */
+    @keyframes gradientBG {
+        0% {
+            background-position: 0% 50%;
+        }
+        50% {
+            background-position: 100% 50%;
+        }
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+
     @keyframes slideIn {
         from {
             opacity: 0;
@@ -104,15 +353,144 @@
         }
     }
 
-    .animate-fadeIn {
-        animation: slideIn 0.5s ease-out forwards;
-        opacity: 0;
+    @keyframes shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+        20%, 60% {
+            transform: translateX(-5px);
+        }
+        40%, 80% {
+            transform: translateX(5px);
+        }
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+        }
+        70% {
+            transform: scale(1.02);
+            box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+        }
+    }
+
+    @keyframes logoSpin {
+        0% {
+            transform: rotate(0deg) scale(1);
+        }
+        50% {
+            transform: rotate(5deg) scale(1.05);
+        }
+        100% {
+            transform: rotate(0deg) scale(1);
+        }
+    }
+
+    @keyframes titleFloat {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    /* Animation classes */
+    .logo-spin {
+        animation: logoSpin 3s ease-in-out infinite;
+    }
+
+    .title-animate {
+        animation: titleFloat 4s ease-in-out infinite;
+    }
+
+    .pulse-hover:hover {
+        animation: pulse 1s ease infinite;
+    }
+
+    .link-animate::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        bottom: -2px;
+        left: 0;
+        background-color: var(--zevaba-light-blue);
+        transform: scaleX(0);
+        transform-origin: bottom right;
+        transition: transform 0.3s ease;
+    }
+
+    .link-animate:hover::after {
+        transform: scaleX(1);
+        transform-origin: bottom left;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+        .auth-container {
+            padding: 1rem;
+        }
+
+        .auth-card {
+            border-radius: 15px;
+        }
+
+        .auth-header {
+            padding: 1.5rem 1.5rem 0.5rem;
+        }
+
+        .auth-form {
+            padding: 1rem 1.5rem 1.5rem;
+        }
+
+        .auth-footer {
+            padding: 1rem 1.5rem 1.5rem;
+        }
+
+        .wave-divider {
+            height: 40px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .auth-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .input-with-icon input,
+        .input-with-icon select,
+        .input-with-icon textarea {
+            padding: 10px 12px 10px 40px;
+            font-size: 0.9rem;
+        }
+
+        .input-with-icon i {
+            left: 12px;
+            font-size: 0.9rem;
+        }
+
+        .password-toggle {
+            right: 12px;
+            font-size: 0.9rem;
+        }
+
+        .auth-button {
+            padding: 12px;
+            font-size: 0.9rem;
+        }
     }
 </style>
 
 <script>
-    // Gestion des toggles password
     document.addEventListener('DOMContentLoaded', function() {
+        // Gestion des toggles password
         const toggles = document.querySelectorAll('.password-toggle');
 
         toggles.forEach(toggle => {
@@ -132,11 +510,31 @@
             });
         });
 
-        // Animation des champs de formulaire
-        const formGroups = document.querySelectorAll('.form-group');
-        formGroups.forEach((group, index) => {
-            group.style.animationDelay = `${index * 0.1}s`;
+        // Animation au focus des champs
+        const inputs = document.querySelectorAll('.input-with-icon input, .input-with-icon select, .input-with-icon textarea');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.querySelector('i').style.transform = 'scale(1.2)';
+            });
+
+            input.addEventListener('blur', function() {
+                this.parentElement.querySelector('i').style.transform = 'scale(1)';
+            });
         });
+
+        // Effet de vague sur le bouton
+        const authButton = document.querySelector('.auth-button');
+        if (authButton) {
+            authButton.addEventListener('mouseenter', function() {
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple-effect');
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 1000);
+            });
+        }
     });
 </script>
 {% endblock %}

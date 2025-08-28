@@ -21,19 +21,48 @@
                 <p class="publication-content">{{ publication.content }}</p>
             </div>
 
-            {% if publication.media %}
-                <div class="publication-media">
-                    {% if publication.media.name|lower|slice:"-4:" == '.pdf' %}
-                        <a href="{{ publication.media.url }}" target="_blank" class="media-link pdf-link">
-                            <i class="fas fa-file-pdf"></i> <span>Voir le PDF</span>
-                        </a>
-                    {% elif publication.media.name|lower|slice:"-4:" in '.jpg,.jpeg,.png,.gif' %}
-                        <img src="{{ publication.media.url }}" alt="Image de la publication" class="media-image">
-                    {% elif publication.media.name|lower|slice:"-4:" in '.mp4,.mov,.avi' %}
-                        <video controls class="media-video">
-                            <source src="{{ publication.media.url }}" type="video/{{ publication.media.name|lower|slice:-3 }}">
-                            Votre navigateur ne supporte pas la vidéo.
-                        </video>
+            {% if publication.medias.all %}  <!-- Vérifie s'il y a des médias -->
+                <div id="carousel-{{ publication.id }}" class="carousel slide" data-bs-ride="carousel">  <!-- Carousel Bootstrap -->
+                    <div class="carousel-inner">
+                        {% for media in publication.medias.all %}
+                            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                {% if media.is_pdf %}
+                                    <a href="{{ media.file.url }}" target="_blank">Voir le PDF</a>
+                                {% elif media.is_image %}
+                                    <img src="{{ media.file.url }}" alt="Image" class="d-block w-100">
+                                {% elif media.is_video %}
+                                    <video controls class="d-block w-100">
+                                        <source src="{{ media.file.url }}" type="video/mp4">
+                                        Votre navigateur ne supporte pas la vidéo.
+                                    </video>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Indicateurs en bas -->
+                    {% if publication.medias.all|length > 1 %}
+                    <div class="carousel-indicators">
+                        {% for media in publication.medias.all %}
+                            <button type="button" data-bs-target="#carousel-{{ publication.id }}" 
+                                    data-bs-slide-to="{{ forloop.counter0 }}" 
+                                    class="{% if forloop.first %}active{% endif %}" 
+                                    aria-current="{% if forloop.first %}true{% else %}false{% endif %}" 
+                                    aria-label="Slide {{ forloop.counter }}"></button>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Boutons pour glisser -->
+                    {% if publication.medias.all|length > 1 %}
+                    <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{{ publication.id }}" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Précédent</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#carousel-{{ publication.id }}" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Suivant</span>
+                    </button>
                     {% endif %}
                 </div>
             {% endif %}
@@ -42,6 +71,26 @@
                 <p class="meta-info">Publié par <span class="meta-highlight">{{ publication.user.username }}</span>
                     {% if publication.club %} dans <span class="meta-highlight">{{ publication.club.name }}</span>{% endif %}
                     le <span class="meta-date">{{ publication.created_at|date:"d/m/Y H:i" }}</span></p>
+                    {% if user.is_authenticated and user != publication.user %}
+                        <form method="POST" action="{% if user in publication.user.followers.all %}{% url 'unsubscribe' publication.user.id %}{% else %}{% url 'subscribe' publication.user.id %}{% endif %}" class="subscribe-form" data-user-id="{{ publication.user.id }}">
+                            {% csrf_token %}
+                            <button type="submit" class="subscribe-btn">
+                                {% if user in publication.user.followers.all %}
+                                    <i class="fas fa-user-minus"></i> Se désabonner
+                                {% else %}
+                                    <i class="fas fa-user-plus"></i> S'abonner
+                                {% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+                <a href="{% url 'send_message' publication.user.id %}" class="message-link">
+                    <span class="user-with-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="message-icon">
+                            <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4Zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10Z"/>
+                        </svg>
+                        <span class="username">{{ publication.user.username }}</span>
+                    </span>
+                </a>
             </div>
 
             <div class="publication-actions">
@@ -80,7 +129,7 @@
                         <div class="reaction-options">
                             {% for reaction_type, reaction_label in reaction_choices %}
                                 <label class="reaction-option">
-                                    <input type="radio" name="type" value="{{ reaction_type }}" class="reaction-input" required>
+                                    <input type="radio" name="type" value="{{ reaction_type }}" class="reaction-input" >
                                     <span class="reaction-label">{{ reaction_label }}</span>
                                 </label>
                             {% endfor %}
@@ -170,7 +219,128 @@
         padding: 20px;
         position: relative;
     }
+    /* Styles pour les indicateurs du carousel */
+    .carousel-indicators {
+        position: absolute;
+        bottom: 10px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+        z-index: 15;
+    }
 
+    .carousel-indicators button {
+        width: 12px;
+        height: 12px;
+        margin: 0 5px;
+        border: none;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .carousel-indicators button.active {
+        background-color: #fff;
+        transform: scale(1.2);
+    }
+
+    .carousel-indicators button:hover {
+        background-color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* Amélioration des contrôles du carousel */
+    .carousel-control-prev,
+    .carousel-control-next {
+        width: 50px;
+        height: 50px;
+        background-color: rgba(0, 0, 0, 0.3);
+        border-radius: 50%;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .carousel:hover .carousel-control-prev,
+    .carousel:hover .carousel-control-next {
+        opacity: 1;
+    }
+
+    .carousel-control-prev {
+        left: 15px;
+    }
+
+    .carousel-control-next {
+        right: 15px;
+    }
+
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Styles pour les médias */
+    .carousel-item img,
+    .carousel-item video {
+        max-height: 500px;
+        object-fit: contain;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .carousel-item a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--primary-color);
+        font-weight: 500;
+        font-size: 1.1rem;
+        transition: var(--transition);
+    }
+
+    .carousel-item a:hover {
+        background-color: #e9ecef;
+        color: var(--primary-dark);
+    }
+
+
+    .subscribe-form {
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.subscribe-btn {
+    background: var(--primary-light);
+    color: var(--primary-color);
+    border: none;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.subscribe-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.subscribe-btn i {
+    font-size: 0.9rem;
+}
     /* Floating Action Button */
     .fab-container {
         position: fixed;
@@ -223,6 +393,47 @@
         display: inline-block;
         margin: 0;
     }
+
+    .message-link {
+    text-decoration: none;
+    color: #4a5568;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.message-link:hover {
+    color: #2d3748;
+    transform: translateY(-2px);
+}
+
+.user-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background-color: #f7fafc;
+    transition: all 0.3s ease;
+}
+
+.message-link:hover .user-with-icon {
+    background-color: #ebf8ff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.message-icon {
+    color: #4299e1;
+    transition: all 0.3s ease;
+}
+
+.message-link:hover .message-icon {
+    color: #3182ce;
+    transform: scale(1.1);
+}
+
+.username {
+    font-weight: 500;
+}
 
     /* Publication Card */
     .publication-card {
@@ -659,7 +870,17 @@
             width: 100%;
         }
     }
+.subscribe-btn.success {
+    animation: pulseSuccess 0.5s;
+    background: var(--success-color);
+    color: white;
+}
 
+@keyframes pulseSuccess {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
     @media (max-width: 480px) {
         .feed-title {
             font-size: 1.6rem;
@@ -733,56 +954,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Like/Dislike Form Handling
-    document.querySelectorAll('.action-form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(form);
-            const publicationId = form.getAttribute('data-publication-id');
-            const action = form.getAttribute('data-action');
-            
-            fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update like button
-                    const likeButton = document.querySelector(`.like-form[data-publication-id="${publicationId}"] .fa-thumbs-up`);
-                    const likeCount = document.querySelector(`.like-form[data-publication-id="${publicationId}"] .action-count`);
-                    
-                    // Update dislike button
-                    const dislikeButton = document.querySelector(`.dislike-form[data-publication-id="${publicationId}"] .fa-thumbs-down`);
-                    const dislikeCount = document.querySelector(`.dislike-form[data-publication-id="${publicationId}"] .action-count`);
-                    
-                    // Update counts
-                    likeCount.textContent = data.likes;
-                    dislikeCount.textContent = data.dislikes;
-                    
-                    // Update icons
-                    if (action === 'like') {
-                        likeButton.classList.toggle('active', data.user_liked);
-                        if (data.user_liked) {
-                            dislikeButton.classList.remove('active');
-                        }
-                    } else {
-                        dislikeButton.classList.toggle('active', data.user_disliked);
-                        if (data.user_disliked) {
-                            likeButton.classList.remove('active');
-                        }
-                    }
-                } else {
-                    console.error('Error:', data.error);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        });
-    });
-
+   
+    // Reaction Form Handling
     // Reaction Form Handling
     document.querySelectorAll('.reaction-form').forEach(form => {
         form.addEventListener('submit', function(e) {
@@ -790,16 +963,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData(form);
             const publicationId = form.getAttribute('data-publication-id');
             const errorMessage = form.querySelector('.error-message');
-            
-            // Client-side validation
-            const reactionType = form.querySelector('input[name="type"]:checked');
             const commentInput = form.querySelector('input[name="comment"]');
             
-            if (!reactionType || !commentInput.value.trim()) {
+            // Client-side validation
+            if (!commentInput.value.trim()) {
                 errorMessage.style.display = 'block';
                 return;
             } else {
                 errorMessage.style.display = 'none';
+            }
+            
+            // Si aucune réaction n'est sélectionnée, on définit 'THOUGHT' par défaut
+            if (!form.querySelector('input[name="type"]:checked')) {
+                formData.set('type', 'THOUGHT');
             }
             
             fetch(form.action, {
@@ -898,6 +1074,135 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => console.error('Error:', error));
+        });
+    });
+
+   // Like/Dislike Form Handling - Version corrigée
+    // Like/Dislike Form Handling - Version corrigée
+    // Like/Dislike Form Handling - Version corrigée
+    document.querySelectorAll('.like-form, .dislike-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const publicationId = form.getAttribute('data-publication-id');
+            const action = form.getAttribute('data-action');
+            const button = this.querySelector('button');
+            const publicationActions = form.closest('.publication-actions');
+            
+            // Récupère les éléments avant la requête
+            const likeButtonIcon = publicationActions.querySelector('.like-button i');
+            const likeCount = publicationActions.querySelector('.like-form .action-count');
+            const dislikeButtonIcon = publicationActions.querySelector('.dislike-button i');
+            const dislikeCount = publicationActions.querySelector('.dislike-form .action-count');
+            
+            // Construction de l'URL correcte
+            const url = `/like_dislike/${publicationId}/`;
+            
+            // Ajout d'un indicateur visuel pendant le chargement
+            button.disabled = true;
+            button.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+            
+            fetch(url, {  // Utilise l'URL construite au lieu de form.action
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+            })
+            .then(response => {
+                button.disabled = false;
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Met à jour les compteurs
+                    likeCount.textContent = data.likes;
+                    dislikeCount.textContent = data.dislikes;
+                    
+                    // Met à jour les états actifs
+                    likeButtonIcon.classList.toggle('active', data.user_liked);
+                    dislikeButtonIcon.classList.toggle('active', data.user_disliked);
+                    
+                    // Met à jour le texte du bouton
+                    if (action === 'like') {
+                        button.innerHTML = `<i class="far fa-thumbs-up ${data.user_liked ? 'active' : ''}"></i> <span class="action-count">${data.likes}</span>`;
+                    } else {
+                        button.innerHTML = `<i class="far fa-thumbs-down ${data.user_disliked ? 'active' : ''}"></i> <span class="action-count">${data.dislikes}</span>`;
+                    }
+                } else {
+                    console.error('Error:', data.error);
+                    if (data.error === 'Authentication required') {
+                        window.location.href = '/login?next=' + window.location.pathname;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.disabled = false;
+                // Réaffiche le bouton normalement en cas d'erreur
+                if (action === 'like') {
+                    button.innerHTML = `<i class="far fa-thumbs-up"></i> <span class="action-count">${likeCount.textContent}</span>`;
+                } else {
+                    button.innerHTML = `<i class="far fa-thumbs-down"></i> <span class="action-count">${dislikeCount.textContent}</span>`;
+                }
+            });
+        });
+    });
+});
+</script>
+<script>
+    // Gestion des abonnements
+document.querySelectorAll('.subscribe-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const userId = this.getAttribute('data-user-id');
+        const button = this.querySelector('button');
+        const isCurrentlySubscribed = button.innerHTML.includes('désabonner');
+        
+        // Animation pendant le chargement
+        button.disabled = true;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            button.disabled = false;
+            if (data.status === 'subscribed' || data.status === 'unsubscribed') {
+                // Mise à jour du bouton
+                if (data.status === 'subscribed') {
+                    button.innerHTML = '<i class="fas fa-user-minus"></i> Se désabonner';
+                    form.action = `/unsubscribe/${userId}/`;
+                } else {
+                    button.innerHTML = '<i class="fas fa-user-plus"></i> S\'abonner';
+                    form.action = `/subscribe/${userId}/`;
+                }
+                
+                // Petite animation de confirmation
+                button.classList.add('success');
+                setTimeout(() => button.classList.remove('success'), 1000);
+            } else {
+                button.innerHTML = originalText;
+                console.error('Erreur:', data.message);
+            }
+        })
+        .catch(error => {
+            button.disabled = false;
+            button.innerHTML = originalText;
+            console.error('Erreur réseau:', error);
         });
     });
 });

@@ -1,0 +1,311 @@
+<div class="message-container" data-message-id="{{ message.id }}">
+    <div class="message-content">
+        {{ message.content }}
+    </div>
+    <div class="message-meta">
+        <span class="message-sender">{{ message.sender.username }}</span>
+        <span>{{ message.created_at|date:"d/m/Y H:i" }}</span>
+        <button class="reply-toggle" data-message-id="{{ message.id }}">
+            <i class="fas fa-reply"></i> Répondre
+        </button>
+    </div>
+
+    <!-- Formulaire de réponse (caché par défaut) -->
+    <form class="reply-form" id="reply-form-{{ message.id }}">
+        {% csrf_token %}
+        <input type="hidden" name="parent_id" value="{{ message.id }}">
+        <div class="reply-input-group">
+            <input type="text" name="content" placeholder="Écrire une réponse..." required>
+            <button type="submit" class="reply-send-button">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </form>
+
+    <!-- Réponses -->
+    <div class="replies-container">
+        {% for reply in message.replies.all %}
+            <div class="message-container reply-message">
+                <div class="message-content">
+                    {{ reply.content }}
+                </div>
+                <div class="message-meta">
+                    <span class="message-sender">{{ reply.sender.username }}</span>
+                    <span>{{ reply.created_at|date:"d/m/Y H:i" }}</span>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .message-container {
+        margin-bottom: 20px;
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 15px;
+        box-shadow: var(--shadow);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .message-container:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .message-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--primary-color), var(--accent-color));
+        border-radius: var(--border-radius) 0 0 var(--border-radius);
+    }
+
+    .message-content {
+        font-size: 1rem;
+        line-height: 1.4;
+        margin-bottom: 8px;
+        color: var(--text-color);
+    }
+
+    .message-meta {
+        display: flex;
+        align-items: center;
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 10px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .message-sender {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .reply-toggle {
+        background: none;
+        border: none;
+        color: var(--secondary-color);
+        font-size: 0.8rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: color 0.3s ease;
+        padding: 5px;
+        border-radius: 4px;
+    }
+
+    .reply-toggle:hover {
+        color: var(--primary-color);
+        background: rgba(67, 97, 238, 0.1);
+    }
+
+    .reply-toggle i {
+        font-size: 0.9rem;
+    }
+
+    .reply-form {
+        margin-top: 15px;
+        display: none;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .reply-input-group {
+        display: flex;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .reply-input-group input {
+        flex: 1;
+        padding: 10px 15px;
+        border: none;
+        outline: none;
+        font-size: 0.9rem;
+        background: rgba(245, 245, 245, 0.8);
+    }
+
+    .reply-send-button {
+        padding: 0 15px;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .reply-send-button:hover {
+        background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+    }
+
+    .replies-container {
+        margin-left: 30px;
+        margin-top: 15px;
+        padding-left: 15px;
+        border-left: 2px solid rgba(67, 97, 238, 0.2);
+        position: relative;
+    }
+
+    .replies-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -2px;
+        width: 2px;
+        height: 15px;
+        background: linear-gradient(to bottom, var(--primary-color), transparent);
+    }
+
+    .reply-message {
+        background: rgba(245, 245, 245, 0.7);
+        padding: 12px;
+        margin-bottom: 12px;
+        box-shadow: none;
+    }
+
+    .reply-message::before {
+        background: linear-gradient(to bottom, var(--accent-color), #a5d8ff);
+    }
+
+    /* Responsive styles */
+    @media (max-width: 600px) {
+        .message-container {
+            padding: 12px;
+        }
+        
+        .replies-container {
+            margin-left: 15px;
+            padding-left: 10px;
+        }
+        
+        .reply-input-group input {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion des réponses - Version corrigée
+    document.querySelectorAll('.reply-toggle').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation(); // Empêche la propagation de l'événement
+            e.preventDefault(); // Empêche le comportement par défaut
+            
+            const formId = `reply-form-${this.dataset.messageId}`;
+            const form = document.getElementById(formId);
+            
+            // Masquer tous les autres formulaires de réponse
+            document.querySelectorAll('.reply-form').forEach(f => {
+                if (f.id !== formId) {
+                    f.style.display = 'none';
+                }
+            });
+            
+            // Basculer l'affichage du formulaire courant
+            if (form.style.display === 'block') {
+                form.style.display = 'none';
+            } else {
+                form.style.display = 'block';
+                // Focus sur le champ de texte quand le formulaire apparaît
+                setTimeout(() => {
+                    form.querySelector('input[name="content"]').focus();
+                }, 50);
+            }
+        });
+    });
+
+    // Envoi des réponses - Version corrigée
+    document.querySelectorAll('.reply-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const sendButton = form.querySelector('.reply-send-button');
+            
+            // Animation du bouton
+            sendButton.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                sendButton.style.transform = '';
+            }, 300);
+            
+            fetch(`{% url 'reply_to_club_message' club.pk %}`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Ajouter la réponse à la liste
+                    const replyHTML = `
+                        <div class="message-container reply-message" style="opacity: 0;">
+                            <div class="message-content">
+                                ${data.content}
+                            </div>
+                            <div class="message-meta">
+                                <span class="message-sender">${data.sender}</span>
+                                <span>${data.created_at}</span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const repliesContainer = this.closest('.message-container').querySelector('.replies-container');
+                    if (repliesContainer.children.length === 0) {
+                        repliesContainer.innerHTML = replyHTML;
+                    } else {
+                        repliesContainer.insertAdjacentHTML('beforeend', replyHTML);
+                    }
+                    
+                    // Animation d'apparition
+                    const newReply = repliesContainer.lastElementChild;
+                    setTimeout(() => {
+                        newReply.style.opacity = '1';
+                    }, 10);
+                    
+                    // Vider et cacher le formulaire
+                    this.querySelector('input[name="content"]').value = '';
+                    this.style.display = 'none';
+                    
+                    // Faire défiler vers le bas
+                    newReply.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    throw new Error(data.error || 'Erreur inconnue');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(error.message || 'Une erreur est survenue lors de l\'envoi de la réponse');
+            });
+        });
+
+        // Empêcher la propagation du clic dans le formulaire
+        form.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+
+    // Fermer les formulaires de réponse quand on clique ailleurs
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.reply-form').forEach(form => {
+            form.style.display = 'none';
+        });
+    });
+});
+</script>

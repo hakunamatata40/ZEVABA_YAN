@@ -41,7 +41,7 @@
                         </button>
                     </form>
                 {% else %}
-                    <form method="POST" action="{% url 'club_subscribe' club.pk %}" class="action-form">
+                    <form method="post" action="{% url 'club_subscribe' pk=club.pk %}" class="action-form" id="subscribe-form">
                         {% csrf_token %}
                         <button type="submit" class="action-button subscribe">
                             <i class="fas fa-user-plus"></i> Rejoindre
@@ -78,14 +78,6 @@
                             <span class="publication-date">{{ publication.created_at|date:"d M Y à H:i" }}</span>
                         </div>
                     </div>
-                    {% if user.is_authenticated %}
-                        <form method="POST" action="{% url 'report_user' publication.user.pk %}" class="report-form" data-user-id="{{ publication.user.pk }}">
-                            {% csrf_token %}
-                            <button type="submit" class="report-button" title="Signaler">
-                                <i class="fas fa-flag"></i>
-                            </button>
-                        </form>
-                    {% endif %}
                 </div>
 
                 <div class="publication-content">
@@ -112,83 +104,99 @@
 
                 <!-- Reactions -->
                 <div class="publication-actions">
-                    <div class="reaction-buttons">
-                        <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="like-form" data-publication-id="{{ publication.pk }}" data-action="like">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="like">
-                            <button type="submit" class="reaction-button like {% if request.user in publication.liked_by.all %}active{% endif %}">
-                                <i class="fas fa-thumbs-up"></i>
-                                <span class="count">{{ publication.likes }}</span>
-                            </button>
-                        </form>
+                    <!-- Like -->
+                    <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="action-form like-form" data-publication-id="{{ publication.pk }}" data-action="like">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="like">
+                        <button type="submit" class="action-button like-button">
+                            <i class="far fa-thumbs-up {% if request.user in publication.liked_by.all %}active{% endif %}"></i>
+                            <span class="action-count">{{ publication.likes }}</span>
+                        </button>
+                    </form>
 
-                        <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="dislike-form" data-publication-id="{{ publication.pk }}" data-action="dislike">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="dislike">
-                            <button type="submit" class="reaction-button dislike {% if request.user in publication.disliked_by.all %}active{% endif %}">
-                                <i class="fas fa-thumbs-down"></i>
-                                <span class="count">{{ publication.dislikes }}</span>
-                            </button>
-                        </form>
-                    </div>
+                    <!-- Dislike -->
+                    <form method="POST" action="{% url 'like_dislike' publication.pk %}" class="action-form dislike-form" data-publication-id="{{ publication.pk }}" data-action="dislike">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="dislike">
+                        <button type="submit" class="action-button dislike-button">
+                            <i class="far fa-thumbs-down {% if request.user in publication.disliked_by.all %}active{% endif %}"></i>
+                            <span class="action-count">{{ publication.dislikes }}</span>
+                        </button>
+                    </form>
 
-                    <button class="comment-toggle" data-publication-id="{{ publication.pk }}">
-                        <i class="fas fa-comment"></i> Commenter
+                    <!-- Comment Toggle Button -->
+                    <button class="action-button comment-toggle" data-publication-id="{{ publication.pk }}">
+                        <i class="far fa-comment"></i>
+                        <span class="action-count">{{ publication.reaction_set.count }}</span>
                     </button>
                 </div>
 
                 <!-- Comment Form (Initially Hidden) -->
                 {% if user.is_authenticated %}
-                    <div class="comment-form-container" id="comment-form-{{ publication.pk }}" style="display: none;">
-                        <form method="POST" action="{% url 'react' publication.pk %}" class="comment-form" data-publication-id="{{ publication.pk }}">
+                    <div class="comments-container" id="comments-{{ publication.pk }}" style="display: none;">
+                        <form method="POST" action="{% url 'react' publication.pk %}" class="reaction-form" data-publication-id="{{ publication.pk }}">
                             {% csrf_token %}
-                            <div class="reaction-types">
+                            <div class="reaction-options">
                                 {% for reaction_type, reaction_label in reaction_choices %}
                                     <label class="reaction-option">
-                                        <input type="radio" name="type" value="{{ reaction_type }}" class="reaction-input" required>
+                                        <input type="radio" name="type" value="{{ reaction_type }}" class="reaction-input">
                                         <span class="reaction-label">{{ reaction_label }}</span>
                                     </label>
                                 {% endfor %}
                             </div>
+
                             <div class="comment-input-group">
                                 <input type="text" name="comment" placeholder="Ajouter un commentaire..." class="comment-input" required>
                                 <button type="submit" class="comment-submit">Envoyer</button>
                             </div>
-                            <p class="error-message"></p>
+                            <p class="error-message">Veuillez écrire un commentaire.</p>
                         </form>
+
+                        <div class="comments-list" data-publication-id="{{ publication.pk }}">
+                            {% for reaction in publication.reaction_set.all %}
+                                <div class="comment-item">
+                                    <div class="comment-header">
+                                        <span class="comment-author">{{ reaction.user.username }}</span>
+                                        <span class="comment-reaction">{{ reaction.get_type_display }}</span>
+                                        <span class="comment-date">{{ reaction.created_at|date:"d/m/Y H:i" }}</span>
+                                    </div>
+                                    <p class="comment-text">{{ reaction.comment }}</p>
+
+                                    <!-- Reply Button -->
+                                    <button class="reply-toggle" data-reaction-id="{{ reaction.id }}">
+                                        Répondre
+                                    </button>
+
+                                    <!-- Replies Section -->
+                                    <div class="replies-container" id="replies-{{ reaction.id }}">
+                                        {% for reply in reaction.reply_set.all %}
+                                            <div class="reply-item">
+                                                <div class="reply-header">
+                                                    <span class="reply-author">{{ reply.user.username }}</span>
+                                                    <span class="reply-date">{{ reply.created_at|date:"d/m/Y H:i" }}</span>
+                                                </div>
+                                                <p class="reply-text">{{ reply.comment }}</p>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+
+                                    <!-- Reply Form (Hidden) -->
+                                    {% if user.is_authenticated %}
+                                        <form method="POST" action="{% url 'reply' reaction.id %}" class="reply-form" id="form-reply-{{ reaction.id }}" data-reaction-id="{{ reaction.id }}">
+                                            {% csrf_token %}
+                                            <div class="reply-input-group">
+                                                <input type="text" name="comment" placeholder="Répondre à ce commentaire..." class="reply-input">
+                                                <button type="submit" class="reply-submit">Envoyer</button>
+                                            </div>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            {% empty %}
+                                <p class="no-comments">Aucun commentaire pour le moment.</p>
+                            {% endfor %}
+                        </div>
                     </div>
                 {% endif %}
-
-                <!-- Comments Section -->
-                <div class="comments-section">
-                    <h4 class="comments-title">Commentaires</h4>
-                    
-                    <div class="comments-list" data-publication-id="{{ publication.pk }}">
-                        {% for reaction in publication.reaction_set.all %}
-                            <div class="comment-item">
-                                <div class="comment-header">
-                                    <a href="{% url 'profile' reaction.user.username %}" class="comment-author">
-                                        {{ reaction.user.username }}
-                                    </a>
-                                    <span class="comment-reaction">{{ reaction.get_type_display }}</span>
-                                    <span class="comment-date">{{ reaction.created_at|date:"d/m/Y H:i" }}</span>
-                                </div>
-                                <p class="comment-text">{{ reaction.comment }}</p>
-                                
-                                {% if user.is_authenticated %}
-                                    <form method="POST" action="{% url 'report_user' reaction.user.pk %}" class="report-form" data-user-id="{{ reaction.user.pk }}">
-                                        {% csrf_token %}
-                                        <button type="submit" class="report-comment" title="Signaler">
-                                            <i class="fas fa-flag"></i> Signaler
-                                        </button>
-                                    </form>
-                                {% endif %}
-                            </div>
-                        {% empty %}
-                            <p class="no-comments">Aucun commentaire pour le moment.</p>
-                        {% endfor %}
-                    </div>
-                </div>
             </div>
         {% empty %}
             <div class="empty-publications">
@@ -417,6 +425,7 @@
         border-radius: 3px;
     }
 
+    /* Publication Card */
     .publication-card {
         background: white;
         border-radius: 15px;
@@ -476,18 +485,6 @@
     .publication-date {
         font-size: 0.8rem;
         color: var(--gray-color);
-    }
-
-    .report-button {
-        background: none;
-        border: none;
-        color: var(--gray-color);
-        cursor: pointer;
-        transition: var(--transition);
-    }
-
-    .report-button:hover {
-        color: var(--danger-color);
     }
 
     /* Publication Content */
@@ -550,73 +547,66 @@
     /* Publication Actions */
     .publication-actions {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 0;
-        border-top: 1px solid rgba(0, 0, 0, 0.05);
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-        margin: 15px 0;
+        gap: 15px;
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
     }
 
-    .reaction-buttons {
-        display: flex;
-        gap: 10px;
+    .action-form {
+        margin: 0;
     }
 
-    .reaction-button {
+    .action-button {
+        background: none;
+        border: none;
         display: flex;
         align-items: center;
         gap: 5px;
-        padding: 8px 12px;
-        border-radius: 20px;
-        background: none;
-        border: 1px solid #ddd;
+        color: var(--gray-color);
         cursor: pointer;
+        font-size: 0.9rem;
         transition: var(--transition);
+        padding: 5px 10px;
+        border-radius: 20px;
     }
 
-    .reaction-button.like.active {
-        background-color: var(--primary-light);
-        border-color: var(--primary-color);
+    .action-button:hover {
+        background: var(--primary-light);
         color: var(--primary-color);
     }
 
-    .reaction-button.dislike.active {
-        background-color: #f8d7da;
-        border-color: var(--danger-color);
-        color: var(--danger-color);
+    .action-button i {
+        font-size: 1.1rem;
     }
 
-    .reaction-button:hover {
-        background-color: rgba(0, 0, 0, 0.05);
+    .action-button i.active {
+        color: var(--primary-color);
+        font-weight: 900;
     }
 
-    .comment-toggle {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        padding: 8px 12px;
-        border-radius: 20px;
-        background: none;
-        border: 1px solid #ddd;
-        cursor: pointer;
-        transition: var(--transition);
+    .action-count {
+        font-size: 0.9rem;
     }
 
-    .comment-toggle:hover {
-        background-color: rgba(0, 0, 0, 0.05);
+    /* Comments Section */
+    .comments-container {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+        animation: fadeIn 0.3s ease-out;
     }
 
-    /* Comment Form */
-    .comment-form-container {
-        margin: 15px 0;
+    /* Reaction Form */
+    .reaction-form {
+        margin-bottom: 20px;
     }
 
-    .reaction-types {
+    .reaction-options {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
     }
 
     .reaction-option {
@@ -635,7 +625,6 @@
         color: var(--primary-color);
         border-radius: 20px;
         font-size: 0.8rem;
-        font-weight: 500;
         cursor: pointer;
         transition: var(--transition);
     }
@@ -647,14 +636,14 @@
 
     .comment-input-group {
         display: flex;
-        margin-bottom: 5px;
+        gap: 10px;
     }
 
     .comment-input {
         flex: 1;
         padding: 10px 15px;
         border: 1px solid #ddd;
-        border-radius: 20px 0 0 20px;
+        border-radius: 20px;
         font-size: 0.9rem;
         transition: var(--transition);
     }
@@ -662,21 +651,23 @@
     .comment-input:focus {
         outline: none;
         border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.2);
     }
 
     .comment-submit {
-        padding: 10px 15px;
-        background-color: var(--primary-color);
+        padding: 10px 20px;
+        background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
         color: white;
         border: none;
-        border-radius: 0 20px 20px 0;
-        cursor: pointer;
+        border-radius: 20px;
         font-weight: 500;
+        cursor: pointer;
         transition: var(--transition);
     }
 
     .comment-submit:hover {
-        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(58, 134, 255, 0.3);
     }
 
     .error-message {
@@ -686,35 +677,23 @@
         display: none;
     }
 
-    /* Comments Section */
-    .comments-section {
-        margin-top: 20px;
-    }
-
-    .comments-title {
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--dark-color);
-        margin-bottom: 10px;
-    }
-
+    /* Comments List */
     .comments-list {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 15px;
     }
 
     .comment-item {
-        background-color: var(--light-gray);
+        background: #f9f9f9;
+        border-radius: 10px;
         padding: 15px;
-        border-radius: 8px;
     }
 
     .comment-header {
         display: flex;
-        flex-wrap: wrap;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         margin-bottom: 8px;
         font-size: 0.85rem;
     }
@@ -722,17 +701,12 @@
     .comment-author {
         font-weight: 600;
         color: var(--dark-color);
-        text-decoration: none;
-    }
-
-    .comment-author:hover {
-        text-decoration: underline;
     }
 
     .comment-reaction {
-        padding: 2px 8px;
-        background-color: var(--primary-light);
+        background: var(--primary-light);
         color: var(--primary-color);
+        padding: 2px 8px;
         border-radius: 10px;
         font-size: 0.75rem;
     }
@@ -740,32 +714,100 @@
     .comment-date {
         color: var(--gray-color);
         font-size: 0.75rem;
+        margin-left: auto;
     }
 
     .comment-text {
         font-size: 0.9rem;
         line-height: 1.5;
-        margin-bottom: 10px;
+        color: var(--dark-color);
     }
 
-    .report-comment {
+    /* Reply Toggle */
+    .reply-toggle {
         background: none;
         border: none;
-        color: var(--gray-color);
+        color: var(--primary-color);
         font-size: 0.8rem;
+        margin-top: 8px;
         cursor: pointer;
         transition: var(--transition);
+        padding: 2px 5px;
+        border-radius: 5px;
     }
 
-    .report-comment:hover {
-        color: var(--danger-color);
+    .reply-toggle:hover {
+        background: var(--primary-light);
     }
 
-    .no-comments {
-        text-align: center;
+    /* Replies */
+    .replies-container {
+        margin-top: 10px;
+        padding-left: 15px;
+        border-left: 2px solid #eee;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .reply-item {
+        background: #f0f0f0;
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    .reply-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 5px;
+        font-size: 0.8rem;
+    }
+
+    .reply-author {
+        font-weight: 600;
+        color: var(--dark-color);
+    }
+
+    .reply-date {
         color: var(--gray-color);
-        font-size: 0.9rem;
-        padding: 15px;
+        font-size: 0.7rem;
+        margin-left: auto;
+    }
+
+    .reply-text {
+        font-size: 0.85rem;
+        line-height: 1.4;
+        color: var(--dark-color);
+    }
+
+    /* Reply Form */
+    .reply-form {
+        margin-top: 10px;
+        display: none;
+    }
+
+    .reply-input-group {
+        display: flex;
+        gap: 8px;
+    }
+
+    .reply-input {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+
+    .reply-submit {
+        padding: 8px 15px;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        cursor: pointer;
     }
 
     /* Empty Publications */
@@ -842,11 +884,6 @@
             gap: 10px;
             align-items: flex-start;
         }
-
-        .reaction-buttons {
-            width: 100%;
-            justify-content: space-between;
-        }
     }
 
     @media (max-width: 480px) {
@@ -887,168 +924,372 @@
 </style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Toggle comment form
-        document.querySelectorAll('.comment-toggle').forEach(button => {
-            button.addEventListener('click', function() {
-                const publicationId = this.getAttribute('data-publication-id');
-                const commentForm = document.getElementById(`comment-form-${publicationId}`);
-                
-                if (commentForm.style.display === 'none') {
-                    commentForm.style.display = 'block';
-                    this.innerHTML = '<i class="fas fa-comment-slash"></i> Fermer';
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion de l'abonnement
+    const subscribeForm = document.querySelector('form[action*="subscribe"]');
+    if (subscribeForm) {
+        subscribeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleClubMembership(this, true);
+        });
+    }
+
+    // Gestion du désabonnement
+    const unsubscribeForm = document.querySelector('form[action*="unsubscribe"]');
+    if (unsubscribeForm) {
+        unsubscribeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleClubMembership(this, false);
+        });
+    }
+
+    function handleClubMembership(form, isSubscribe) {
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {
+                'X-CSRFToken': form.querySelector('input[name="csrfmiddlewaretoken"]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateUIAfterMembershipChange(data, isSubscribe);
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('Une erreur est survenue', 'error');
+        });
+    }
+
+    function updateUIAfterMembershipChange(data, isSubscribe) {
+        const actionButtons = document.querySelector('.action-buttons');
+        const membersCount = document.querySelector('.members-count');
+        
+        // Mettre à jour le compteur de membres
+        membersCount.innerHTML = `<i class="fas fa-users"></i> ${data.members_count} membres`;
+        
+        // Mettre à jour les boutons
+        if (isSubscribe) {
+            actionButtons.innerHTML = `
+                <form method="POST" action="{% url 'club_unsubscribe' club.pk %}" class="action-form">
+                    {% csrf_token %}
+                    <button type="submit" class="action-button unsubscribe">
+                        <i class="fas fa-user-minus"></i> Quitter
+                    </button>
+                </form>
+                <a href="{% url 'club_messages' club.pk %}" class="action-button message">
+                    <i class="fas fa-envelope"></i> Messagerie
+                </a>
+                {% if user == club.creator or user in club.admins.all %}
+                    <a href="{% url 'club_manage_admins' club.pk %}" class="action-button manage">
+                        <i class="fas fa-user-cog"></i> Gérer
+                    </a>
+                {% endif %}
+            `;
+        } else {
+            actionButtons.innerHTML = `
+                <form method="post" action="{% url 'club_subscribe' pk=club.pk %}" class="action-form">
+                    {% csrf_token %}
+                    <button type="submit" class="action-button subscribe">
+                        <i class="fas fa-user-plus"></i> Rejoindre
+                    </button>
+                </form>
+            `;
+        }
+
+        // Réattacher les événements aux nouveaux boutons
+        const newSubscribeForm = document.querySelector('form[action*="subscribe"]');
+        const newUnsubscribeForm = document.querySelector('form[action*="unsubscribe"]');
+        
+        if (newSubscribeForm) {
+            newSubscribeForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleClubMembership(this, true);
+            });
+        }
+        
+        if (newUnsubscribeForm) {
+            newUnsubscribeForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleClubMembership(this, false);
+            });
+        }
+    }
+
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+
+    // Ajoutez ce CSS pour les toasts
+    const style = document.createElement('style');
+    style.textContent = `
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 4px;
+            color: white;
+            z-index: 1000;
+            animation: slideIn 0.3s, fadeOut 0.5s 2.5s;
+        }
+        .toast.success {
+            background-color: #28a745;
+        }
+        .toast.error {
+            background-color: #dc3545;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Comment Toggle Functionality
+    document.querySelectorAll('.comment-toggle').forEach(button => {
+        button.addEventListener('click', function() {
+            const publicationId = this.getAttribute('data-publication-id');
+            const commentsContainer = document.getElementById(`comments-${publicationId}`);
+            
+            if (commentsContainer.style.display === 'none') {
+                commentsContainer.style.display = 'block';
+                this.innerHTML = '<i class="far fa-comment"></i> <span class="action-count">{{ publication.reaction_set.count }}</span>';
+                this.classList.add('active');
+            } else {
+                commentsContainer.style.display = 'none';
+                this.innerHTML = '<i class="far fa-comment"></i> <span class="action-count">{{ publication.reaction_set.count }}</span>';
+                this.classList.remove('active');
+            }
+        });
+    });
+
+    // Reply Toggle Functionality
+    document.querySelectorAll('.reply-toggle').forEach(button => {
+        button.addEventListener('click', function() {
+            const reactionId = this.getAttribute('data-reaction-id');
+            const replyForm = document.getElementById(`form-reply-${reactionId}`);
+            
+            if (replyForm.style.display === 'none') {
+                replyForm.style.display = 'block';
+            } else {
+                replyForm.style.display = 'none';
+            }
+        });
+    });
+
+    // Reaction Form Handling
+    document.querySelectorAll('.reaction-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const publicationId = form.getAttribute('data-publication-id');
+            const errorMessage = form.querySelector('.error-message');
+            const commentInput = form.querySelector('input[name="comment"]');
+            
+            // Client-side validation
+            if (!commentInput.value.trim()) {
+                errorMessage.style.display = 'block';
+                return;
+            } else {
+                errorMessage.style.display = 'none';
+            }
+            
+            // Si aucune réaction n'est sélectionnée, on définit 'THOUGHT' par défaut
+            if (!form.querySelector('input[name="type"]:checked')) {
+                formData.set('type', 'THOUGHT');
+            }
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Clear form
+                    commentInput.value = '';
+                    form.querySelectorAll('input[name="type"]').forEach(input => input.checked = false);
+                    
+                    // Update comment count
+                    const commentToggle = document.querySelector(`.comment-toggle[data-publication-id="${publicationId}"] .action-count`);
+                    commentToggle.textContent = parseInt(commentToggle.textContent) + 1;
+                    
+                    // Add new comment to the list
+                    const commentsList = document.querySelector(`.comments-list[data-publication-id="${publicationId}"]`);
+                    const noComments = commentsList.querySelector('.no-comments');
+                    
+                    if (noComments) {
+                        noComments.remove();
+                    }
+                    
+                    const newComment = document.createElement('div');
+                    newComment.className = 'comment-item';
+                    newComment.innerHTML = `
+                        <div class="comment-header">
+                            <span class="comment-author">${data.username}</span>
+                            <span class="comment-reaction">${data.reaction_type_label}</span>
+                            <span class="comment-date">${data.created_at}</span>
+                        </div>
+                        <p class="comment-text">${data.comment}</p>
+                    `;
+                    
+                    commentsList.prepend(newComment);
                 } else {
-                    commentForm.style.display = 'none';
-                    this.innerHTML = '<i class="fas fa-comment"></i> Commenter';
-                }
-            });
-        });
-
-        // Handle comment form submission
-        document.querySelectorAll('.comment-form').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                const publicationId = this.getAttribute('data-publication-id');
-                const errorMessage = this.querySelector('.error-message');
-                
-                // Client-side validation
-                if (!formData.get('type') || !formData.get('comment').trim()) {
-                    errorMessage.textContent = 'Veuillez sélectionner une réaction et écrire un commentaire.';
+                    errorMessage.textContent = data.error || 'Une erreur est survenue';
                     errorMessage.style.display = 'block';
-                    return;
                 }
-                
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const commentsList = document.querySelector(`.comments-list[data-publication-id="${publicationId}"]`);
-                        const noComments = commentsList.querySelector('.no-comments');
-                        
-                        if (noComments) {
-                            noComments.remove();
-                        }
-                        
-                        const newComment = document.createElement('div');
-                        newComment.className = 'comment-item';
-                        newComment.innerHTML = `
-                            <div class="comment-header">
-                                <a href="/profile/${data.username}/" class="comment-author">${data.username}</a>
-                                <span class="comment-reaction">${data.reaction_type_label}</span>
-                                <span class="comment-date">${data.created_at}</span>
-                            </div>
-                            <p class="comment-text">${data.comment}</p>
-                            <form method="POST" action="/report/user/${data.user_id}/" class="report-form" data-user-id="${data.user_id}">
-                                <input type="hidden" name="csrfmiddlewaretoken" value="${formData.get('csrfmiddlewaretoken')}">
-                                <button type="submit" class="report-comment" title="Signaler">
-                                    <i class="fas fa-flag"></i> Signaler
-                                </button>
-                            </form>
-                        `;
-                        
-                        commentsList.prepend(newComment);
-                        this.reset();
-                        errorMessage.style.display = 'none';
-                    } else {
-                        errorMessage.textContent = data.error || 'Une erreur est survenue';
-                        errorMessage.style.display = 'block';
-                    }
-                })
-                .catch(error => {
-                    errorMessage.textContent = 'Erreur réseau. Veuillez réessayer.';
-                    errorMessage.style.display = 'block';
-                    console.error('Error:', error);
-                });
-            });
-        });
-
-        // Handle like/dislike form submissions
-        document.querySelectorAll('.like-form, .dislike-form').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                const publicationId = this.getAttribute('data-publication-id');
-                const action = this.getAttribute('data-action');
-                
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const likeButton = document.querySelector(`.like-form[data-publication-id="${publicationId}"] .like`);
-                        const dislikeButton = document.querySelector(`.dislike-form[data-publication-id="${publicationId}"] .dislike`);
-                        const likeCount = document.querySelector(`.like-form[data-publication-id="${publicationId}"] .count`);
-                        const dislikeCount = document.querySelector(`.dislike-form[data-publication-id="${publicationId}"] .count`);
-                        
-                        likeCount.textContent = data.likes;
-                        dislikeCount.textContent = data.dislikes;
-                        
-                        if (action === 'like') {
-                            if (data.user_liked) {
-                                likeButton.classList.add('active');
-                            } else {
-                                likeButton.classList.remove('active');
-                            }
-                            
-                            if (data.user_disliked) {
-                                dislikeButton.classList.remove('active');
-                            }
-                        } else {
-                            if (data.user_disliked) {
-                                dislikeButton.classList.add('active');
-                            } else {
-                                dislikeButton.classList.remove('active');
-                            }
-                            
-                            if (data.user_liked) {
-                                likeButton.classList.remove('active');
-                            }
-                        }
-                    } else {
-                        alert('Erreur : ' + data.error);
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            });
-        });
-
-        // Handle report form submissions
-        document.querySelectorAll('.report-form').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                const userId = this.getAttribute('data-user-id');
-                
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Utilisateur signalé avec succès.');
-                    } else {
-                        alert('Erreur : ' + data.error);
-                    }
-                })
-                .catch(error => console.error('Error:', error));
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorMessage.textContent = 'Erreur réseau. Veuillez réessayer.';
+                errorMessage.style.display = 'block';
             });
         });
     });
+
+    // Reply Form Handling
+    document.querySelectorAll('.reply-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const reactionId = form.getAttribute('data-reaction-id');
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Clear form
+                    form.querySelector('input[name="comment"]').value = '';
+                    form.style.display = 'none';
+                    
+                    // Add new reply to the list
+                    const repliesContainer = document.getElementById(`replies-${reactionId}`);
+                    const noReplies = repliesContainer.querySelector('p');
+                    
+                    if (noReplies && noReplies.classList.contains('no-comments')) {
+                        noReplies.remove();
+                    }
+                    
+                    const newReply = document.createElement('div');
+                    newReply.className = 'reply-item';
+                    newReply.innerHTML = `
+                        <div class="reply-header">
+                            <span class="reply-author">${data.username}</span>
+                            <span class="reply-date">${data.created_at}</span>
+                        </div>
+                        <p class="reply-text">${data.comment}</p>
+                    `;
+                    
+                    repliesContainer.appendChild(newReply);
+                } else {
+                    console.error('Error:', data.error);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+
+    // Like/Dislike Form Handling
+    document.querySelectorAll('.like-form, .dislike-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const publicationId = form.getAttribute('data-publication-id');
+            const action = form.getAttribute('data-action');
+            const button = this.querySelector('button');
+            const publicationActions = form.closest('.publication-actions');
+            
+            // Récupère les éléments avant la requête
+            const likeButtonIcon = publicationActions.querySelector('.like-button i');
+            const likeCount = publicationActions.querySelector('.like-form .action-count');
+            const dislikeButtonIcon = publicationActions.querySelector('.dislike-button i');
+            const dislikeCount = publicationActions.querySelector('.dislike-form .action-count');
+            
+            // Construction de l'URL correcte
+            const url = `/like_dislike/${publicationId}/`;
+            
+            // Ajout d'un indicateur visuel pendant le chargement
+            button.disabled = true;
+            button.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+            
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+            })
+            .then(response => {
+                button.disabled = false;
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Met à jour les compteurs
+                    likeCount.textContent = data.likes;
+                    dislikeCount.textContent = data.dislikes;
+                    
+                    // Met à jour les états actifs
+                    likeButtonIcon.classList.toggle('active', data.user_liked);
+                    dislikeButtonIcon.classList.toggle('active', data.user_disliked);
+                    
+                    // Met à jour le texte du bouton
+                    if (action === 'like') {
+                        button.innerHTML = `<i class="far fa-thumbs-up ${data.user_liked ? 'active' : ''}"></i> <span class="action-count">${data.likes}</span>`;
+                    } else {
+                        button.innerHTML = `<i class="far fa-thumbs-down ${data.user_disliked ? 'active' : ''}"></i> <span class="action-count">${data.dislikes}</span>`;
+                    }
+                } else {
+                    console.error('Error:', data.error);
+                    if (data.error === 'Authentication required') {
+                        window.location.href = '/login?next=' + window.location.pathname;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.disabled = false;
+                // Réaffiche le bouton normalement en cas d'erreur
+                if (action === 'like') {
+                    button.innerHTML = `<i class="far fa-thumbs-up"></i> <span class="action-count">${likeCount.textContent}</span>`;
+                } else {
+                    button.innerHTML = `<i class="far fa-thumbs-down"></i> <span class="action-count">${dislikeCount.textContent}</span>`;
+                }
+            });
+        });
+    });
+});
 </script>
+
 {% endblock %}

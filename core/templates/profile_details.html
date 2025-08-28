@@ -1,0 +1,964 @@
+{% extends 'base.html' %}
+{% block title %}Détails du Profil{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <h1 class="profile-title">Détails de votre profil</h1>
+    
+    <div class="profile-card">
+        <form method="post" class="profile-form">
+            {% csrf_token %}
+            
+            <!-- Statut relationnel avec changement de thème -->
+            <div class="form-section">
+                <label class="section-label">Statut relationnel</label>
+                <div class="relationship-status-grid">
+                    {% for value, label in form.relationship_status.field.choices %}
+                    {% if value %}
+                    <div class="status-option" data-value="{{ value }}">
+                        <input type="radio" id="status-{{ value }}" name="relationship_status" value="{{ value }}" 
+                               {% if form.relationship_status.value == value %}checked{% endif %}>
+                        <label for="status-{{ value }}" class="status-label">
+                            <span class="status-icon">
+                                {% if value == 'SINGLE' %}🙂{% endif %}
+                                {% if value == 'RELATIONSHIP' %}💑{% endif %}
+                                {% if value == 'MARRIED' %}💍{% endif %}
+                                {% if value == 'COMPLICATED' %}😵{% endif %}
+                            </span>
+                            <span class="status-text">{{ label }}</span>
+                        </label>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Partenaire -->
+            <div class="form-section" id="partner-field">
+                <label class="section-label">Partenaire</label>
+                {{ form.partner }}
+                <p class="field-hint">Sélectionnez votre partenaire parmi nos utilisateurs</p>
+            </div>
+            
+            <!-- Écoles -->
+            <div class="form-section">
+                <h3 class="section-title">Formation</h3>
+                <div id="schools-container">
+                    <!-- École initiale -->
+                    <div class="school-entry">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nom de l'école</label>
+                                {{ form.school_name }}
+                            </div>
+                            <div class="form-group">
+                                <label>Année de début</label>
+                                {{ form.school_start_year }}
+                            </div>
+                            <div class="form-group">
+                                <label>Année de fin</label>
+                                {{ form.school_end_year }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" id="add-school" class="add-button">
+                    <span class="plus-icon">+</span> Ajouter une autre école
+                </button>
+            </div>
+            
+            <!-- Écoles existantes -->
+            {% if schools %}
+            <div class="existing-items">
+                <h4 class="existing-title">Écoles fréquentées:</h4>
+                <ul class="items-list">
+                    {% for school in schools %}
+                    <li class="list-item">
+                        <span>{{ school.name }} ({{ school.start_year }} - {{ school.end_year|default:"Présent" }})</span>
+                        <a href="{% url 'remove_school' forloop.counter0 %}" class="remove-item">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            
+            <!-- Hobbies -->
+            <div class="form-section">
+                <h3 class="section-title">Loisirs et centres d'intérêt</h3>
+                <div id="hobbies-container">
+                    <div class="hobby-entry">
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label>Ajouter un loisir/hobby</label>
+                                {{ form.hobby }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" id="add-hobby" class="add-button">
+                    <span class="plus-icon">+</span> Ajouter un autre hobby
+                </button>
+            </div>
+            
+            <!-- Hobbies existants -->
+            {% if hobbies %}
+            <div class="existing-items">
+                <h4 class="existing-title">Vos loisirs:</h4>
+                <div class="hobbies-list">
+                    {% for hobby in hobbies %}
+                    <span class="hobby-tag">
+                        {{ hobby }}
+                        <a href="{% url 'remove_hobby' forloop.counter0 %}" class="remove-hobby">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="form-actions">
+                <button type="submit" class="submit-button">
+                    Enregistrer les modifications
+                </button>
+                <a href="{% url 'profile' username=user.username %}" class="cancel-button">
+                    Retour au profil
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Overlay avec des motifs qui changent selon le statut -->
+<div id="theme-overlay">
+    <div class="hearts-container" id="hearts"></div>
+    <div class="sparks-container" id="sparks"></div>
+</div>
+
+<style>
+/* Variables CSS pour les thèmes */
+:root {
+    --primary-color: #4f46e5;
+    --secondary-color: #6366f1;
+    --accent-color: #8b5cf6;
+    --background: #f9fafb;
+    --card-bg: #ffffff;
+    --text-color: #1f2937;
+    --border-color: #e5e7eb;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #3b82f6;
+}
+
+/* Thème par défaut (célibataire) */
+.theme-single {
+    --primary-color: #4f46e5;
+    --secondary-color: #6366f1;
+    --accent-color: #8b5cf6;
+    --theme-pattern: none;
+}
+
+/* Thème en couple */
+.theme-relationship {
+    --primary-color: #ec4899;
+    --secondary-color: #f472b6;
+    --accent-color: #f9a8d4;
+}
+
+/* Thème marié */
+.theme-married {
+    --primary-color: #db2777;
+    --secondary-color: #ec4899;
+    --accent-color: #fbcfe8;
+}
+
+/* Thème compliqué */
+.theme-complicated {
+    --primary-color: #7e22ce;
+    --secondary-color: #a855f7;
+    --accent-color: #c084fc;
+}
+
+/* Styles de base */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--background);
+    color: var(--text-color);
+    line-height: 1.6;
+    transition: all 0.5s ease;
+    overflow-x: hidden;
+    position: relative;
+}
+
+.profile-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.profile-title {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    color: var(--primary-color);
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    animation: fadeInDown 0.8s ease;
+}
+
+.profile-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 2.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+    animation: slideUp 0.5s ease;
+}
+
+.profile-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(to right, var(--primary-color), var(--accent-color));
+}
+
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.form-section {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    animation: fadeIn 0.6s ease;
+}
+
+.section-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+    position: relative;
+    display: inline-block;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    width: 40px;
+    height: 3px;
+    background: var(--accent-color);
+    border-radius: 3px;
+}
+
+/* Styles pour le statut relationnel */
+.relationship-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.status-option input[type="radio"] {
+    display: none;
+}
+
+.status-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem;
+    background: #f8fafc;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.status-option input[type="radio"]:checked + .status-label {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.status-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.status-text {
+    font-weight: 500;
+}
+
+/* Styles pour les champs de formulaire */
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.form-group.full-width {
+    flex: 1 0 100%;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+input, select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: #f8fafc;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.field-hint {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
+}
+
+/* Styles pour les boutons */
+.add-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--card-bg);
+    color: var(--primary-color);
+    border: 2px dashed var(--primary-color);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+}
+
+.add-button:hover {
+    background: var(--primary-color);
+    color: white;
+    border-style: solid;
+}
+
+.plus-icon {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.submit-button {
+    background: var(--success-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+}
+
+.submit-button:hover {
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(16, 185, 129, 0.4);
+}
+
+.cancel-button {
+    background: #f3f4f6;
+    color: #4b5563;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.cancel-button:hover {
+    background: #e5e7eb;
+    transform: translateY(-2px);
+}
+
+/* Styles pour les éléments existants */
+.existing-items {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    animation: fadeIn 0.6s ease;
+}
+
+.existing-title {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.items-list {
+    list-style: none;
+}
+
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.list-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.remove-item {
+    color: var(--danger-color);
+    text-decoration: none;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+
+.remove-item:hover {
+    transform: scale(1.2);
+}
+
+.hobbies-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.hobby-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--primary-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.875rem;
+    animation: popIn 0.4s ease;
+}
+
+.remove-hobby {
+    color: white;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+}
+
+.remove-hobby:hover {
+    transform: scale(1.2);
+}
+
+/* Styles pour les nouvelles entrées d'école et hobby */
+.school-entry, .hobby-entry {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    animation: slideIn 0.4s ease;
+    position: relative;
+}
+
+.school-entry::after, .hobby-entry::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.school-entry:last-child::after, .hobby-entry:last-child::after {
+    display: none;
+}
+
+.remove-entry {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: var(--danger-color);
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.remove-entry:hover {
+    transform: scale(1.2);
+}
+
+/* Overlay de thème */
+#theme-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.1;
+    transition: opacity 0.5s ease;
+}
+
+.theme-relationship #theme-overlay,
+.theme-married #theme-overlay {
+    opacity: 0.3;
+}
+
+.heart, .spark {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.heart {
+    color: #ff2a70;
+    font-size: 20px;
+    animation: fall 5s linear infinite;
+}
+
+.spark {
+    color: #ffde34;
+    font-size: 15px;
+    animation: sparkle 2s linear infinite;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes popIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes fall {
+    0% {
+        transform: translateY(-10vh) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .profile-container {
+        padding: 1rem;
+    }
+    
+    .profile-title {
+        font-size: 2rem;
+    }
+    
+    .profile-card {
+        padding: 1.5rem;
+    }
+    
+    .relationship-status-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-group {
+        min-width: 100%;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .submit-button, .cancel-button {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .relationship-status-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .status-label {
+        flex-direction: row;
+        gap: 1rem;
+        justify-content: flex-start;
+    }
+    
+    .status-icon {
+        margin-bottom: 0;
+        font-size: 1.5rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Variables globales
+    let schoolCount = 1;
+    let hobbyCount = 1;
+    
+    // Éléments DOM
+    const relationshipStatusRadios = document.querySelectorAll('input[name="relationship_status"]');
+    const partnerField = document.getElementById('partner-field');
+    const schoolsContainer = document.getElementById('schools-container');
+    const hobbiesContainer = document.getElementById('hobbies-container');
+    const addSchoolButton = document.getElementById('add-school');
+    const addHobbyButton = document.getElementById('add-hobby');
+    const body = document.body;
+    const themeOverlay = document.getElementById('theme-overlay');
+    
+    // Fonction pour changer le thème
+    function changeTheme(theme) {
+        // Retirer toutes les classes de thème
+        body.classList.remove('theme-single', 'theme-relationship', 'theme-married', 'theme-complicated');
+        
+        // Ajouter la classe du thème sélectionné
+        body.classList.add(`theme-${theme.toLowerCase()}`);
+        
+        // Afficher/masquer le champ partenaire
+        if (theme === 'RELATIONSHIP' || theme === 'MARRIED') {
+            partnerField.style.display = 'block';
+            partnerField.style.animation = 'fadeIn 0.6s ease';
+            createHearts();
+        } else {
+            partnerField.style.display = 'none';
+            clearHearts();
+        }
+        
+        // Animation spéciale pour le statut "compliqué"
+        if (theme === 'COMPLICATED') {
+            createSparks();
+        } else {
+            clearSparks();
+        }
+    }
+    
+    // Créer des cœurs qui tombent
+    function createHearts() {
+        clearHearts();
+        const heartsContainer = document.getElementById('hearts');
+        
+        for (let i = 0; i < 20; i++) {
+            const heart = document.createElement('div');
+            heart.classList.add('heart');
+            heart.innerHTML = '❤';
+            heart.style.left = `${Math.random() * 100}%`;
+            heart.style.animationDelay = `${Math.random() * 5}s`;
+            heartsContainer.appendChild(heart);
+        }
+    }
+    
+    // Créer des étincelles
+    function createSparks() {
+        clearSparks();
+        const sparksContainer = document.getElementById('sparks');
+        
+        for (let i = 0; i < 15; i++) {
+            const spark = document.createElement('div');
+            spark.classList.add('spark');
+            spark.innerHTML = '✨';
+            spark.style.left = `${Math.random() * 100}%`;
+            spark.style.top = `${Math.random() * 100}%`;
+            spark.style.animationDelay = `${Math.random() * 2}s`;
+            sparksContainer.appendChild(spark);
+        }
+    }
+    
+    // Nettoyer les cœurs
+    function clearHearts() {
+        const heartsContainer = document.getElementById('hearts');
+        heartsContainer.innerHTML = '';
+    }
+    
+    // Nettoyer les étincelles
+    function clearSparks() {
+        const sparksContainer = document.getElementById('sparks');
+        sparksContainer.innerHTML = '';
+    }
+    
+    // Initialiser le thème en fonction de la sélection actuelle
+    const initialStatus = document.querySelector('input[name="relationship_status"]:checked');
+    if (initialStatus) {
+        changeTheme(initialStatus.value);
+    }
+    
+    // Écouter les changements de statut relationnel
+    relationshipStatusRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            changeTheme(this.value);
+        });
+    });
+    
+    // Ajouter une nouvelle école
+    addSchoolButton.addEventListener('click', function() {
+        schoolCount++;
+        
+        const newSchoolEntry = document.createElement('div');
+        newSchoolEntry.classList.add('school-entry');
+        newSchoolEntry.innerHTML = `
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nom de l'école</label>
+                    <input type="text" name="school_name_${schoolCount}" placeholder="Nom de l'école">
+                </div>
+                <div class="form-group">
+                    <label>Année de début</label>
+                    <input type="number" name="school_start_year_${schoolCount}" placeholder="Année de début" min="1900" max="2100">
+                </div>
+                <div class="form-group">
+                    <label>Année de fin</label>
+                    <input type="number" name="school_end_year_${schoolCount}" placeholder="Année de fin (laissez vide si en cours)" min="1900" max="2100">
+                </div>
+            </div>
+            <button type="button" class="remove-entry">×</button>
+        `;
+        
+        schoolsContainer.appendChild(newSchoolEntry);
+        
+        // Animation d'entrée
+        newSchoolEntry.style.opacity = '0';
+        newSchoolEntry.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+            newSchoolEntry.style.opacity = '1';
+            newSchoolEntry.style.transform = 'translateX(0)';
+            newSchoolEntry.style.transition = 'all 0.4s ease';
+        }, 10);
+        
+        // Ajouter l'écouteur d'événement pour le bouton de suppression
+        const removeButton = newSchoolEntry.querySelector('.remove-entry');
+        removeButton.addEventListener('click', function() {
+            newSchoolEntry.style.opacity = '0';
+            newSchoolEntry.style.transform = 'translateX(20px)';
+            newSchoolEntry.style.transition = 'all 0.4s ease';
+            
+            setTimeout(() => {
+                newSchoolEntry.remove();
+            }, 400);
+        });
+    });
+    
+    // Ajouter un nouveau hobby
+    addHobbyButton.addEventListener('click', function() {
+        hobbyCount++;
+        
+        const newHobbyEntry = document.createElement('div');
+        newHobbyEntry.classList.add('hobby-entry');
+        newHobbyEntry.innerHTML = `
+            <div class="form-row">
+                <div class="form-group full-width">
+                    <label>Loisir/hobby</label>
+                    <input type="text" name="hobby_${hobbyCount}" placeholder="Votre loisir ou hobby">
+                </div>
+            </div>
+            <button type="button" class="remove-entry">×</button>
+        `;
+        
+        hobbiesContainer.appendChild(newHobbyEntry);
+        
+        // Animation d'entrée
+        newHobbyEntry.style.opacity = '0';
+        newHobbyEntry.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+            newHobbyEntry.style.opacity = '1';
+            newHobbyEntry.style.transform = 'translateX(0)';
+            newHobbyEntry.style.transition = 'all 0.4s ease';
+        }, 10);
+        
+        // Ajouter l'écouteur d'événement pour le bouton de suppression
+        const removeButton = newHobbyEntry.querySelector('.remove-entry');
+        removeButton.addEventListener('click', function() {
+            newHobbyEntry.style.opacity = '0';
+            newHobbyEntry.style.transform = 'translateX(20px)';
+            newHobbyEntry.style.transition = 'all 0.4s ease';
+            
+            setTimeout(() => {
+                newHobbyEntry.remove();
+            }, 400);
+        });
+    });
+    
+    // Préparer les données du formulaire avant soumission
+    const form = document.querySelector('.profile-form');
+    form.addEventListener('submit', function(e) {
+        // Récupérer toutes les écoles
+        const schoolEntries = document.querySelectorAll('.school-entry');
+        const schoolsData = [];
+        
+        schoolEntries.forEach((entry, index) => {
+            const name = entry.querySelector('input[type="text"]').value;
+            const startYear = entry.querySelector('input[type="number"]:nth-of-type(1)').value;
+            const endYear = entry.querySelector('input[type="number"]:nth-of-type(2)').value;
+            
+            if (name || startYear || endYear) {
+                schoolsData.push({
+                    name: name,
+                    start_year: startYear,
+                    end_year: endYear
+                });
+            }
+        });
+        
+        // Ajouter les données des écoles comme champ caché
+        if (schoolsData.length > 0) {
+            const schoolsInput = document.createElement('input');
+            schoolsInput.type = 'hidden';
+            schoolsInput.name = 'schools_data';
+            schoolsInput.value = JSON.stringify(schoolsData);
+            form.appendChild(schoolsInput);
+        }
+        
+        // Récupérer tous les hobbies
+        const hobbyEntries = document.querySelectorAll('.hobby-entry');
+        const hobbiesData = [];
+        
+        hobbyEntries.forEach((entry, index) => {
+            const hobby = entry.querySelector('input[type="text"]').value;
+            
+            if (hobby) {
+                hobbiesData.push(hobby);
+            }
+        });
+        
+        // Ajouter les données des hobbies comme champ caché
+        if (hobbiesData.length > 0) {
+            const hobbiesInput = document.createElement('input');
+            hobbiesInput.type = 'hidden';
+            hobbiesInput.name = 'hobbies_data';
+            hobbiesInput.value = JSON.stringify(hobbiesData);
+            form.appendChild(hobbiesInput);
+        }
+    });
+});
+</script>
+{% endblock %}

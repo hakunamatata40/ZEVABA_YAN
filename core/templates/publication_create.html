@@ -37,17 +37,18 @@
 
             <div class="form-group">
                 <label for="{{ form.club.id_for_label }}" class="form-label">Club (optionnel)</label>
-                {{ form.club }}
+                {{ form.Club }}
                 <div class="form-underline"></div>
             </div>
 
             <div class="form-group file-upload">
-                <label for="{{ form.media.id_for_label }}" class="form-label">Média (image, vidéo, PDF)</label>
+                <label for="id_file" class="form-label">Médias (images, vidéos, PDF)</label>
                 <div class="file-upload-container">
                     <label class="file-upload-label">
                         <i class="fas fa-cloud-upload-alt"></i>
-                        <span class="file-upload-text">Glissez-déposez ou cliquez pour sélectionner</span>
-                        {{ form.media }}
+                        <span class="file-upload-text">Glissez-déposez ou cliquez pour sélectionner plusieurs fichiers</span>
+                        <input type="file" name="file" id="id_file" multiple class="file-input">
+                        <p>Vous pouvez sélectionner plusieurs fichiers en une fois (Ctrl + clic).</p>
                         <span class="file-name" id="file-name">Aucun fichier sélectionné</span>
                     </label>
                 </div>
@@ -346,13 +347,17 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // File upload display
+     // File upload display for multiple files
     const fileInput = document.querySelector('input[type="file"]');
     const fileNameDisplay = document.getElementById('file-name');
 
     fileInput.addEventListener('change', function() {
         if (this.files.length > 0) {
-            fileNameDisplay.textContent = this.files[0].name;
+            if (this.files.length === 1) {
+                fileNameDisplay.textContent = this.files[0].name;
+            } else {
+                fileNameDisplay.textContent = `${this.files.length} fichiers sélectionnés`;
+            }
         } else {
             fileNameDisplay.textContent = 'Aucun fichier sélectionné';
         }

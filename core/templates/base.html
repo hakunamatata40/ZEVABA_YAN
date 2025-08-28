@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZEVABA - {% block title %}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>.
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
     <style>
         /* Variables CSS */
@@ -364,13 +366,13 @@
 
         <div class="nav-links">
             {% if user.is_authenticated %}
-                <a href="{% url 'profile' user.username %}" class="nav-link">Profil</a>
-                <a href="{% url 'feed' %}" class="nav-link">Fil d'actualité</a>
-                <a href="{% url 'clubs' %}" class="nav-link">Clubs</a>
+                <a href="{% url 'profile' user.username %}" class="nav-link {% if request.path == '/profile/'|add:user.username|add:'/' %}active active-indicator{% endif %}">Profil</a>
+                <a href="{% url 'feed' %}" class="nav-link {% if request.path == '/feed/' %}active active-indicator{% endif %}">Fil d'actualité</a>
+                <a href="{% url 'clubs' %}" class="nav-link {% if request.path == '/clubs/' %}active active-indicator{% endif %}">Clubs</a>
                 <a href="{% url 'logout' %}" class="nav-link">Déconnexion</a>
             {% else %}
-                <a href="{% url 'login' %}" class="nav-link">Connexion</a>
-                <a href="{% url 'register' %}" class="nav-link register-link">Inscription</a>
+                <a href="{% url 'login' %}" class="nav-link {% if request.path == '/login/' %}active active-indicator{% endif %}">Connexion</a>
+                <a href="{% url 'register' %}" class="nav-link register-link {% if request.path == '/register/' %}active{% endif %}">Inscription</a>
             {% endif %}
         </div>
     </nav>
@@ -378,30 +380,39 @@
     <!-- Navigation Mobile -->
     <nav class="mobile-nav" id="mobileNav">
         {% if user.is_authenticated %}
-            <a href="{% url 'profile' user.username %}" class="mobile-nav-link">
+            <a href="{% url 'home' %}" class="mobile-nav-link {% if request.path == '/' %}active active-indicator{% endif %}">
+                <i class="fas fa-home"></i>
+                <span>Accueil</span>
+            </a>
+            <a href="{% url 'profile' user.username %}" class="mobile-nav-link {% if request.path == '/profile/'|add:user.username|add:'/' %}active active-indicator{% endif %}">
                 <i class="fas fa-user"></i>
                 <span>Profil</span>
             </a>
-            <a href="{% url 'feed' %}" class="mobile-nav-link">
+            <a href="{% url 'feed' %}" class="mobile-nav-link {% if request.path == '/feed/' %}active active-indicator{% endif %}">
                 <i class="fas fa-newspaper"></i>
                 <span>Actu</span>
             </a>
-            <a href="{% url 'clubs' %}" class="mobile-nav-link">
+            <a href="{% url 'clubs' %}" class="mobile-nav-link {% if request.path == '/clubs/' %}active active-indicator{% endif %}">
                 <i class="fas fa-users"></i>
                 <span>Clubs</span>
             </a>
-            
+            <a href="{% url 'messages' %}" class="mobile-nav-link {% if request.path == '/messages/' %}active active-indicator{% endif %}">
+                <i class="fas fa-message"></i>
+                <span>Messages</span>
+            </a>
         {% else %}
-            <a href="{% url 'login' %}" class="mobile-nav-link">
+            <a href="{% url 'login' %}" class="mobile-nav-link {% if request.path == '/login/' %}active active-indicator{% endif %}">
                 <i class="fas fa-sign-in-alt"></i>
                 <span>Connexion</span>
             </a>
-            <a href="{% url 'register' %}" class="mobile-nav-link">
+            <a href="{% url 'register' %}" class="mobile-nav-link {% if request.path == '/register/' %}active active-indicator{% endif %}">
                 <i class="fas fa-user-plus"></i>
                 <span>Inscription</span>
             </a>
         {% endif %}
     </nav>
+
+    
 
     <!-- Menu Mobile Fullscreen -->
     <div class="mobile-menu" id="mobileMenu">
@@ -411,13 +422,13 @@
 
         <div class="mobile-menu-links">
             {% if user.is_authenticated %}
-                <a href="{% url 'profile' user.username %}" class="mobile-menu-link animate-fadeIn delay-100">Profil</a>
-                <a href="{% url 'feed' %}" class="mobile-menu-link animate-fadeIn delay-200">Fil d'actualité</a>
-                <a href="{% url 'clubs' %}" class="mobile-menu-link animate-fadeIn delay-300">Clubs</a>
+                <a href="{% url 'profile' user.username %}" class="mobile-menu-link animate-fadeIn delay-100 {% if request.path == '/profile/'|add:user.username|add:'/' %}active{% endif %}">Profil</a>
+                <a href="{% url 'feed' %}" class="mobile-menu-link animate-fadeIn delay-200 {% if request.path == '/feed/' %}active{% endif %}">Fil d'actualité</a>
+                <a href="{% url 'clubs' %}" class="mobile-menu-link animate-fadeIn delay-300 {% if request.path == '/clubs/' %}active{% endif %}">Clubs</a>
                 <a href="{% url 'logout' %}" class="mobile-menu-link animate-fadeIn delay-400">Déconnexion</a>
             {% else %}
-                <a href="{% url 'login' %}" class="mobile-menu-link animate-fadeIn delay-100">Connexion</a>
-                <a href="{% url 'register' %}" class="mobile-menu-link animate-fadeIn delay-200">Inscription</a>
+                <a href="{% url 'login' %}" class="mobile-menu-link animate-fadeIn delay-100 {% if request.path == '/login/' %}active{% endif %}">Connexion</a>
+                <a href="{% url 'register' %}" class="mobile-menu-link animate-fadeIn delay-200 {% if request.path == '/register/' %}active{% endif %}">Inscription</a>
             {% endif %}
         </div>
     </div>
@@ -499,5 +510,52 @@
 
         window.addEventListener('resize', handleResize);
     </script>
+    <style>
+        /* ... (autres styles existants) ... */
+
+        /* Style amélioré pour les liens actifs */
+        .nav-link.active {
+            color: var(--zevaba-light-blue);
+            font-weight: 600;
+        }
+
+        .nav-link.active::after {
+            width: 100%;
+            background-color: var(--zevaba-light-blue);
+            height: 3px;
+            bottom: -2px;
+        }
+
+        .mobile-nav-link.active {
+            color: var(--zevaba-light-blue);
+            font-weight: 600;
+        }
+
+        .mobile-nav-link.active i {
+            color: var(--zevaba-light-blue);
+            transform: translateY(-3px);
+        }
+
+        /* Ajout d'un point indicateur */
+        .nav-link.active-indicator::before {
+            content: '•';
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--zevaba-light-blue);
+            font-size: 1.2rem;
+        }
+
+        .mobile-nav-link.active-indicator::before {
+            content: '•';
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--zevaba-light-blue);
+            font-size: 1.2rem;
+        }
+    </style>
 </body>
 </html>

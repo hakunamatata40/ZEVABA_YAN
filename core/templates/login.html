@@ -1,135 +1,226 @@
 {% extends 'base.html' %}
 {% block title %}Connexion{% endblock %}
+{% load static %}
 
 {% block content %}
-<div class="auth-container animate-fadeIn">
-    <div class="auth-card">
-        <div class="auth-header">
-            <h1>Connexion</h1>
-            <div class="auth-logo">
-                <img src="{% static 'images/logo.png' %}" alt="Logo Zevaba">
+<div class="login-container">
+    <div class="login-card">
+        <!-- Effet de particules en fond -->
+        <div class="particles"></div>
+        
+        <div class="login-header">
+            <div class="logo-wrapper">
+                <img src="{% static 'images/logo.png' %}" alt="Logo Zevaba" class="logo-float">
+                <div class="logo-glow"></div>
+            </div>
+            <h1 class="title-wave">Connexion</h1>
+            <div class="wave-divider">
+                <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+                    <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" fill="var(--zevaba-light-blue)"></path>
+                    <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5" fill="var(--zevaba-light-blue)"></path>
+                    <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" fill="var(--zevaba-light-blue)"></path>
+                </svg>
             </div>
         </div>
 
-        <form method="post" class="auth-form">
+        <form method="post" class="login-form">
             {% csrf_token %}
-
-            <div class="form-group">
+            
+            <div class="form-group" style="--delay:1">
                 <div class="input-with-icon">
                     <i class="fas fa-user"></i>
-                    <input type="text" name="username" placeholder="Nom d'utilisateur" required>
+                    <input type="text" name="username" placeholder="Nom d'utilisateur" required class="input-animate">
+                    <div class="focus-border"></div>
                 </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" style="--delay:2">
                 <div class="input-with-icon">
                     <i class="fas fa-lock"></i>
-                    <input type="password" name="password" placeholder="Mot de passe" id="password" required>
+                    <input type="password" name="password" placeholder="Mot de passe" id="password" required class="input-animate">
+                    <div class="focus-border"></div>
                     <button type="button" class="password-toggle">
                         <i class="fas fa-eye"></i>
                     </button>
                 </div>
             </div>
 
-            <button type="submit" class="auth-button">
+            <button type="submit" class="login-button">
                 <span>Se connecter</span>
                 <i class="fas fa-arrow-right"></i>
+                <div class="button-liquid"></div>
             </button>
         </form>
 
         {% if messages %}
-        <div class="auth-messages">
+        <div class="login-messages">
             {% for message in messages %}
-            <div class="message error">{{ message }}</div>
+            <div class="message error animate-shake">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>{{ message }}</span>
+            </div>
             {% endfor %}
         </div>
         {% endif %}
 
-        <div class="auth-footer">
-            <p>Pas encore de compte ? <a href="{% url 'register' %}">S'inscrire</a></p>
+        <div class="login-footer">
+            <p>Pas encore de compte ? <a href="{% url 'register' %}" class="link-magnetic">S'inscrire</a></p>
         </div>
     </div>
 </div>
 
 <style>
-    /* Styles généraux pour les pages d'authentification */
-    .auth-container {
+    /* Variables CSS */
+    :root {
+        --zevaba-dark-blue: #1E3A8A;
+        --zevaba-light-blue: #3B82F6;
+        --zevaba-lighter-blue: #93C5FD;
+        --white: #FFFFFF;
+        --light-gray: #F3F4F6;
+        --medium-gray: #E5E7EB;
+        --dark-gray: #6B7280;
+        --error-red: #EF4444;
+        --success-green: #10B981;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Base styles */
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--light-gray);
+        color: #333;
+        line-height: 1.6;
+    }
+
+    /* Login container */
+    .login-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: calc(100vh - 200px);
+        min-height: 100vh;
         padding: 2rem;
-        background: linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, rgba(135, 206, 235, 0.1) 100%);
-    }
-
-    .auth-card {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 15px 30px rgba(30, 58, 138, 0.15);
-        width: 100%;
-        max-width: 450px;
-        padding: 2.5rem;
+        background: linear-gradient(135deg, var(--zevaba-lighter-blue) 0%, var(--zevaba-light-blue) 100%);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
         position: relative;
         overflow: hidden;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-    .auth-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 40px rgba(30, 58, 138, 0.2);
-    }
-
-    .auth-card::before {
-        content: '';
+    /* Effet de particules */
+    .particles {
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
-        height: 8px;
-        background: linear-gradient(90deg, var(--zevaba-dark-blue) 0%, var(--zevaba-light-blue) 100%);
-    }
-
-    .auth-header {
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-
-    .auth-header h1 {
-        font-size: 2rem;
-        color: var(--zevaba-dark-blue);
-        margin-bottom: 1rem;
-        font-weight: 700;
-    }
-
-    .auth-logo {
-        width: 80px;
-        height: 80px;
-        margin: 0 auto 1rem;
-        border-radius: 50%;
-        background: rgba(30, 58, 138, 0.1);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 15px;
-        box-shadow: 0 5px 15px rgba(30, 58, 138, 0.1);
-    }
-
-    .auth-logo img {
-        width: 100%;
         height: 100%;
-        object-fit: contain;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='3' fill='rgba(255,255,255,0.3)'/%3E%3Ccircle cx='80' cy='70' r='2' fill='rgba(255,255,255,0.3)'/%3E%3Ccircle cx='140' cy='30' r='4' fill='rgba(255,255,255,0.3)'/%3E%3Ccircle cx='180' cy='90' r='3' fill='rgba(255,255,255,0.3)'/%3E%3Ccircle cx='50' cy='150' r='2' fill='rgba(255,255,255,0.3)'/%3E%3Ccircle cx='120' cy='180' r='3' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E");
+        animation: particlesMove 20s linear infinite;
+        z-index: 0;
     }
 
-    .auth-form {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
+    /* Login card */
+    .login-card {
+        background: var(--white);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        width: 100%;
+        max-width: 450px;
+        overflow: hidden;
+        transform: translateY(0);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        z-index: 1;
+        backdrop-filter: blur(5px);
+        background-color: rgba(255, 255, 255, 0.9);
     }
 
-    .form-group {
+    .login-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    /* Login header */
+    .login-header {
+        text-align: center;
+        padding: 2rem 2rem 1rem;
         position: relative;
     }
 
+    .logo-wrapper {
+        position: relative;
+        margin: 0 auto 1.5rem;
+        width: 90px;
+        height: 90px;
+    }
+
+    .logo-float {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        position: relative;
+        z-index: 2;
+        animation: float 6s ease-in-out infinite;
+    }
+
+    .logo-glow {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, rgba(59, 130, 246, 0) 70%);
+        animation: pulseGlow 4s ease-in-out infinite;
+        z-index: 1;
+    }
+
+    .login-header h1 {
+        color: var(--zevaba-dark-blue);
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        font-weight: 700;
+        position: relative;
+        display: inline-block;
+    }
+
+    /* Wave divider */
+    .wave-divider {
+        position: relative;
+        height: 60px;
+        width: 100%;
+        overflow: hidden;
+        margin-bottom: -1px;
+    }
+
+    .wave-divider svg {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Login form */
+    .login-form {
+        padding: 1.5rem 2rem 2rem;
+    }
+
+    /* Form groups */
+    .form-group {
+        margin-bottom: 1.5rem;
+        opacity: 0;
+        animation: slideIn 0.5s ease-out forwards;
+        animation-delay: calc(var(--delay) * 0.1s);
+    }
+
+    /* Input with icon */
     .input-with-icon {
         position: relative;
         display: flex;
@@ -139,42 +230,63 @@
     .input-with-icon i {
         position: absolute;
         left: 15px;
-        color: var(--zevaba-dark-blue);
-        font-size: 1.1rem;
+        color: var(--zevaba-light-blue);
+        font-size: 1rem;
         transition: all 0.3s ease;
+        z-index: 2;
     }
 
     .input-with-icon input {
         width: 100%;
         padding: 15px 15px 15px 45px;
-        border: 2px solid rgba(30, 58, 138, 0.1);
+        border: 2px solid var(--medium-gray);
         border-radius: 10px;
         font-size: 1rem;
         transition: all 0.3s ease;
-        background-color: rgba(30, 58, 138, 0.03);
+        background-color: var(--light-gray);
+        position: relative;
+        z-index: 1;
     }
 
     .input-with-icon input:focus {
         border-color: var(--zevaba-light-blue);
-        box-shadow: 0 0 0 3px rgba(135, 206, 235, 0.3);
         outline: none;
-        background-color: white;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        background-color: var(--white);
     }
 
     .input-with-icon input:focus + i {
-        color: var(--zevaba-light-blue);
-        transform: scale(1.1);
+        color: var(--zevaba-dark-blue);
+        transform: scale(1.2);
     }
 
+    /* Focus border animation */
+    .focus-border {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background-color: var(--zevaba-light-blue);
+        transition: width 0.3s ease;
+        z-index: 3;
+    }
+
+    .input-with-icon input:focus ~ .focus-border {
+        width: 100%;
+    }
+
+    /* Password toggle */
     .password-toggle {
         position: absolute;
         right: 15px;
         background: none;
         border: none;
-        color: rgba(30, 58, 138, 0.5);
+        color: var(--dark-gray);
         cursor: pointer;
-        font-size: 1.1rem;
+        font-size: 1rem;
         transition: all 0.3s ease;
+        z-index: 2;
     }
 
     .password-toggle:hover {
@@ -182,154 +294,347 @@
         transform: scale(1.1);
     }
 
-    .auth-button {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 10px;
-        background: linear-gradient(90deg, var(--zevaba-dark-blue) 0%, var(--zevaba-light-blue) 100%);
-        color: white;
+    /* Login button */
+    .login-button {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, var(--zevaba-light-blue) 0%, var(--zevaba-dark-blue) 100%);
+        color: var(--white);
         border: none;
-        padding: 15px;
         border-radius: 10px;
         font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        margin-top: 1.5rem;
         transition: all 0.3s ease;
-        box-shadow: 0 5px 15px rgba(30, 58, 138, 0.2);
+        box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
         position: relative;
         overflow: hidden;
+        z-index: 1;
     }
 
-    .auth-button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(30, 58, 138, 0.3);
-    }
-
-    .auth-button:active {
-        transform: translateY(1px);
-    }
-
-    .auth-button i {
+    .login-button i {
         transition: transform 0.3s ease;
     }
 
-    .auth-button:hover i {
+    .login-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(30, 58, 138, 0.4);
+    }
+
+    .login-button:hover i {
         transform: translateX(5px);
     }
 
-    .auth-button::before {
-        content: '';
+    .login-button:active {
+        transform: translateY(0);
+    }
+
+    /* Effet liquide sur le bouton */
+    .button-liquid {
         position: absolute;
-        top: 0;
-        left: -100%;
+        top: -50px;
+        left: 0;
         width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: 0.5s;
+        height: 200px;
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-100%) rotate(0deg);
+        transition: transform 0.6s ease;
+        z-index: -1;
     }
 
-    .auth-button:hover::before {
-        left: 100%;
+    .login-button:hover .button-liquid {
+        transform: translateY(0) rotate(10deg);
     }
 
-    .auth-messages {
+    /* Login messages */
+    .login-messages {
         margin-top: 1.5rem;
     }
 
     .message {
-        padding: 12px;
+        padding: 12px 15px;
         border-radius: 8px;
         margin-bottom: 1rem;
         font-size: 0.9rem;
-        text-align: center;
+        display: flex;
+        align-items: center;
+        gap: 10px;
         animation: fadeIn 0.5s ease-out;
     }
 
     .message.error {
-        background-color: rgba(255, 0, 0, 0.1);
-        color: #d32f2f;
-        border-left: 4px solid #d32f2f;
+        background-color: rgba(239, 68, 68, 0.1);
+        color: var(--error-red);
+        border-left: 4px solid var(--error-red);
     }
 
-    .auth-footer {
+    .message i {
+        font-size: 1.1rem;
+    }
+
+    /* Login footer */
+    .login-footer {
         text-align: center;
-        margin-top: 2rem;
-        color: rgba(30, 58, 138, 0.7);
+        padding: 1.5rem 2rem 2rem;
+        color: var(--dark-gray);
         font-size: 0.9rem;
     }
 
-    .auth-footer a {
-        color: var(--zevaba-dark-blue);
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.3s ease;
-    }
-
-    .auth-footer a:hover {
+    /* Effet magnétique sur les liens */
+    .link-magnetic {
         color: var(--zevaba-light-blue);
-        text-decoration: underline;
+        text-decoration: none;
+        font-weight: 600;
+        position: relative;
+        display: inline-block;
+        transition: transform 0.2s ease;
     }
 
-    /* Responsive */
+    .link-magnetic:hover {
+        color: var(--zevaba-dark-blue);
+        transform: translateY(-2px);
+    }
+
+    .link-magnetic::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        bottom: -2px;
+        left: 0;
+        background-color: var(--zevaba-light-blue);
+        transform: scaleX(0);
+        transform-origin: bottom right;
+        transition: transform 0.3s ease;
+    }
+
+    .link-magnetic:hover::after {
+        transform: scaleX(1);
+        transform-origin: bottom left;
+    }
+
+    /* Animations */
+    @keyframes gradientBG {
+        0% {
+            background-position: 0% 50%;
+        }
+        50% {
+            background-position: 100% 50%;
+        }
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+
+    @keyframes particlesMove {
+        0% {
+            transform: translateY(0);
+        }
+        100% {
+            transform: translateY(-200px);
+        }
+    }
+
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    @keyframes pulseGlow {
+        0%, 100% {
+            opacity: 0.6;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+    }
+
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+        20%, 60% {
+            transform: translateX(-5px);
+        }
+        40%, 80% {
+            transform: translateX(5px);
+        }
+    }
+
+    @keyframes titleWave {
+        0%, 100% {
+            transform: translateY(0) rotate(0deg);
+        }
+        25% {
+            transform: translateY(-5px) rotate(1deg);
+        }
+        75% {
+            transform: translateY(5px) rotate(-1deg);
+        }
+    }
+
+    /* Animation classes */
+    .title-wave {
+        animation: titleWave 8s ease-in-out infinite;
+    }
+
+    .animate-shake {
+        animation: shake 0.5s ease;
+    }
+
+    /* Responsive design */
     @media (max-width: 768px) {
-        .auth-container {
+        .login-container {
             padding: 1rem;
-            min-height: calc(100vh - 150px);
         }
 
-        .auth-card {
-            padding: 1.5rem;
+        .login-card {
+            border-radius: 15px;
         }
 
-        .auth-header h1 {
+        .login-header {
+            padding: 1.5rem 1.5rem 0.5rem;
+        }
+
+        .logo-wrapper {
+            width: 70px;
+            height: 70px;
+        }
+
+        .login-header h1 {
             font-size: 1.5rem;
         }
 
-        .auth-logo {
-            width: 60px;
-            height: 60px;
+        .login-form {
+            padding: 1rem 1.5rem 1.5rem;
+        }
+
+        .login-footer {
+            padding: 1rem 1.5rem 1.5rem;
+        }
+
+        .wave-divider {
+            height: 40px;
         }
     }
 
     @media (max-width: 480px) {
-        .auth-card {
-            padding: 1.25rem;
-        }
-
         .input-with-icon input {
             padding: 12px 12px 12px 40px;
+            font-size: 0.9rem;
+        }
+
+        .input-with-icon i {
+            left: 12px;
+            font-size: 0.9rem;
+        }
+
+        .password-toggle {
+            right: 12px;
+            font-size: 0.9rem;
+        }
+
+        .login-button {
+            padding: 14px;
+            font-size: 0.9rem;
         }
     }
 </style>
 
 <script>
-    // Toggle password visibility
-    const passwordToggle = document.querySelector('.password-toggle');
-    if (passwordToggle) {
-        passwordToggle.addEventListener('click', function() {
-            const passwordInput = document.getElementById('password');
-            const icon = this.querySelector('i');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestion des toggles password
+        const passwordToggle = document.querySelector('.password-toggle');
+        if (passwordToggle) {
+            passwordToggle.addEventListener('click', function() {
+                const passwordInput = document.getElementById('password');
+                const icon = this.querySelector('i');
 
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        });
-    }
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        }
 
-    // Animation for form inputs
-    document.addEventListener('DOMContentLoaded', () => {
-        const inputs = document.querySelectorAll('.form-group');
-        inputs.forEach((input, index) => {
-            input.style.animationDelay = `${index * 100}ms`;
-            input.classList.add('animate-fadeIn');
+        // Effet magnétique sur les liens
+        const magneticLinks = document.querySelectorAll('.link-magnetic');
+        magneticLinks.forEach(link => {
+            link.addEventListener('mousemove', function(e) {
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const angle = Math.atan2(y - centerY, x - centerX) * 180 / Math.PI;
+                this.style.transform = `translate(${(x - centerX) * 0.1}px, ${(y - centerY) * 0.1}px)`;
+            });
+
+            link.addEventListener('mouseleave', function() {
+                this.style.transform = 'translate(0, 0)';
+            });
         });
+
+        // Animation des inputs au focus
+        const inputs = document.querySelectorAll('.input-animate');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.querySelector('i').style.transform = 'scale(1.2)';
+            });
+
+            input.addEventListener('blur', function() {
+                this.parentElement.querySelector('i').style.transform = 'scale(1)';
+            });
+        });
+
+        // Effet liquide sur le bouton
+        const loginButton = document.querySelector('.login-button');
+        if (loginButton) {
+            loginButton.addEventListener('mousemove', function(e) {
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                this.querySelector('.button-liquid').style.transform = `translate(${x - rect.width/2}px, ${y - rect.height}px) rotate(${(x / rect.width) * 20}deg)`;
+            });
+        }
     });
 </script>
 {% endblock %}

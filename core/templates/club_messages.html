@@ -1,34 +1,341 @@
 {% extends 'base.html' %}
-{% block title %}Messages{% endblock %}
+{% block title %}Messagerie - {{ club.name }}{% endblock %}
+
 {% block content %}
-    <div class="container mx-auto p-4">
-        <h1 class="text-2xl font-bold mb-4 text-zevaba-dark-blue">Messages</h1>
-        <h2 class="text-xl font-bold mb-2 text-zevaba-dark-blue">Messages reçus</h2>
-        <div class="space-y-4">
-            {% for message in received_messages %}
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <p class="text-gray-800">De <a href="{% url 'profile' message.sender.username %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue">{{ message.sender.username }}</a> le {{ message.created_at|date:"d/m/Y H:i" }}</p>
-                    <p class="text-gray-600">{{ message.content }}</p>
-                    {% if not message.is_read %}
-                        <p class="text-sm text-zevaba-light-blue">Non lu</p>
-                    {% endif %}
-                </div>
-            {% endfor %}
-            {% if not received_messages %}
-                <p class="text-gray-500">Aucun message reçu.</p>
-            {% endif %}
+<div class="club-messages-container">
+    <!-- Header avec infos du club -->
+    <div class="club-header">
+        <a href="{% url 'club_detail' club.pk %}" class="back-button">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div class="club-info">
+            <h2>{{ club.name }}</h2>
+            <p>{{ club.members.count }} membres</p>
         </div>
-        <h2 class="text-xl font-bold mb-2 mt-6 text-zevaba-dark-blue">Messages envoyés</h2>
-        <div class="space-y-4">
-            {% for message in sent_messages %}
-                <div class="bg-white p-4 rounded-lg shadow">
-                    <p class="text-gray-800">À <a href="{% url 'profile' message.recipient.username %}" class="text-zevaba-dark-blue hover:text-zevaba-light-blue">{{ message.recipient.username }}</a> le {{ message.created_at|date:"d/m/Y H:i" }}</p>
-                    <p class="text-gray-600">{{ message.content }}</p>
-                </div>
-            {% endfor %}
-            {% if not sent_messages %}
-                <p class="text-gray-500">Aucun message envoyé.</p>
-            {% endif %}
-        </div>
+        <div class="club-header-decoration"></div>
     </div>
+
+    <!-- Liste des messages -->
+    <div class="messages-list" id="messages-list">
+        {% for message in messages %}
+            {% include 'club_message.html' with message=message %}
+        {% empty %}
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="far fa-comments"></i>
+                </div>
+                <h3>Aucun message dans ce club</h3>
+                <p>Soyez le premier à envoyer un message !</p>
+                <div class="empty-state-decoration"></div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Formulaire d'envoi -->
+    <div class="message-form-container">
+        <form id="club-message-form" method="POST" action="{% url 'club_messages' club.pk %}">
+            {% csrf_token %}
+            <div class="input-group">
+                <input type="text" name="content" placeholder="Écrire un message..." required>
+                <button type="submit" class="send-button">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    :root {
+        --primary-color: #4361ee;
+        --secondary-color: #3f37c9;
+        --accent-color: #4cc9f0;
+        --text-color: #2b2d42;
+        --light-bg: #f8f9fa;
+        --message-bg: #ffffff;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        --border-radius: 12px;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+        100% { transform: translateY(0px); }
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+        background-color: var(--light-bg);
+        color: var(--text-color);
+    }
+
+    .club-messages-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        box-shadow: var(--shadow);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .club-header {
+        display: flex;
+        align-items: center;
+        padding: 20px 15px;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .club-header-decoration {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 150px;
+        height: 150px;
+        background: radial-gradient(circle, rgba(76, 201, 240, 0.3) 0%, transparent 70%);
+        z-index: -1;
+    }
+
+    .back-button {
+        margin-right: 15px;
+        color: white;
+        font-size: 1.2rem;
+        transition: transform 0.3s ease;
+    }
+
+    .back-button:hover {
+        transform: translateX(-3px);
+    }
+
+    .club-info h2 {
+        margin: 0;
+        font-size: 1.3rem;
+        font-weight: 600;
+    }
+
+    .club-info p {
+        margin: 3px 0 0;
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .messages-list {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        background-color: var(--light-bg);
+        background-image: radial-gradient(circle at 10% 20%, rgba(76, 201, 240, 0.05) 0%, transparent 20%);
+    }
+
+    .message-form-container {
+        padding: 15px;
+        background: white;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        position: sticky;
+        bottom: 0;
+    }
+
+    .input-group {
+        display: flex;
+        border-radius: 25px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(67, 97, 238, 0.2);
+        transition: box-shadow 0.3s ease;
+    }
+
+    .input-group:focus-within {
+        box-shadow: 0 2px 15px rgba(67, 97, 238, 0.3);
+    }
+
+    .input-group input {
+        flex: 1;
+        padding: 12px 20px;
+        border: none;
+        outline: none;
+        font-size: 0.95rem;
+        background: rgba(245, 245, 245, 0.8);
+        transition: background 0.3s ease;
+    }
+
+    .input-group input:focus {
+        background: white;
+    }
+
+    .send-button {
+        padding: 0 20px;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .send-button:hover {
+        background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+        transform: translateX(2px);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+        position: relative;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 20px;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .empty-state h3 {
+        font-size: 1.3rem;
+        margin-bottom: 10px;
+        color: var(--text-color);
+    }
+
+    .empty-state p {
+        font-size: 0.95rem;
+        opacity: 0.8;
+    }
+
+    .empty-state-decoration {
+        position: absolute;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(76, 201, 240, 0.1) 0%, transparent 70%);
+        border-radius: 50%;
+        z-index: -1;
+    }
+
+    /* Animation for new messages */
+    .message-container {
+        animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    /* Responsive styles */
+    @media (max-width: 600px) {
+        .club-messages-container {
+            border-radius: 0;
+        }
+        
+        .club-header {
+            padding: 15px 10px;
+        }
+        
+        .messages-list {
+            padding: 15px 10px;
+        }
+        
+        .input-group input {
+            padding: 10px 15px;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('club-message-form');
+    const messagesList = document.getElementById('messages-list');
+    
+    // Envoi de message via AJAX
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const sendButton = form.querySelector('.send-button');
+        
+        // Animation du bouton
+        sendButton.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+            sendButton.style.transform = '';
+        }, 300);
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Ajouter le nouveau message à la liste
+                const messageHTML = `
+                    <div class="message-container" style="opacity: 0;">
+                        <div class="message-content">
+                            ${data.content}
+                        </div>
+                        <div class="message-meta">
+                            <span class="message-sender">Vous</span>
+                            <span>${data.created_at}</span>
+                        </div>
+                    </div>
+                `;
+                
+                // Si la liste est vide (état initial), remplacer le contenu
+                if (messagesList.querySelector('.empty-state')) {
+                    messagesList.innerHTML = messageHTML;
+                } else {
+                    messagesList.insertAdjacentHTML('beforeend', messageHTML);
+                }
+                
+                // Animation d'apparition
+                const newMessage = messagesList.lastElementChild;
+                setTimeout(() => {
+                    newMessage.style.opacity = '1';
+                }, 10);
+                
+                // Vider le champ de saisie
+                form.querySelector('input[name="content"]').value = '';
+                
+                // Faire défiler vers le bas
+                messagesList.scrollTo({
+                    top: messagesList.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+
+    // Faire défiler vers le bas au chargement
+    messagesList.scrollTo({
+        top: messagesList.scrollHeight,
+        behavior: 'smooth'
+    });
+});
+</script>
 {% endblock %}
